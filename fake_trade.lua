@@ -397,11 +397,9 @@ local function sendTradeUpdate()
 end
 
 -- Configuration : change cette URL pour pointer vers ton serveur
--- Railway (bloqué par Cloudflare/executor) : _G.TRADE_SERVER_URL = "https://web-production-9ec54.up.railway.app"
--- LocalTunnel (renouveler à chaque redémarrage) : _G.TRADE_SERVER_URL = "https://sour-needles-end.loca.lt"
--- TunnelMole : _G.TRADE_SERVER_URL = "http://ztipie-ip-88-165-174-33.tunnelmole.net"
--- PAR DEFAUT : localhost (toujours compatible)
-local SERVER_URL = (_G.TRADE_SERVER_URL or "http://localhost:3000")
+-- Railway : _G.TRADE_SERVER_URL = "https://web-production-3ee54.up.railway.app"
+-- Localhost : _G.TRADE_SERVER_URL = "http://localhost:3000"
+local SERVER_URL = (_G.TRADE_SERVER_URL or "https://web-production-3ee54.up.railway.app")
 
 local function registerToServer()
     if not request then
