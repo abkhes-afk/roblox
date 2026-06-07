@@ -403,12 +403,12 @@ local SERVER_URL = (_G.TRADE_SERVER_URL or "https://web-production-3ee54.up.rail
 
 local function registerToServer()
     if not request then
-        warn("[HTTP] Ton executor ne supporte pas les requêtes HTTP.")
+        warn("[TRADE] registerToServer: request() est nil")
         return false
     end
     
-    local success = pcall(function()
-        request({
+    local success, result = pcall(function()
+        return request({
             Url = SERVER_URL .. "/api/register",
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
@@ -425,10 +425,21 @@ local function registerToServer()
         })
     end)
     
+    if success then
+        warn("[TRADE] registerToServer: OK - reponse recue")
+        if result and result.Body then
+            warn("[TRADE] registerToServer: Body=" .. tostring(result.Body):sub(1, 100))
+        end
+    else
+        warn("[TRADE] registerToServer: ERREUR - " .. tostring(result))
+    end
+    
     return success
 end
 
 local function pollCommands()
+    warn("[TRADE] pollCommands demarre")
+    local pollCount = 0
     while true do
         if request then
             local success, resp = pcall(function()
@@ -438,9 +449,15 @@ local function pollCommands()
                 })
             end)
             
+            pollCount = pollCount + 1
+            if pollCount <= 3 or pollCount % 10 == 0 then
+                warn("[TRADE] pollCommands cycle #" .. pollCount .. " - success=" .. tostring(success))
+            end
+            
             if success and resp and resp.Body then
                 local ok, data = pcall(function() return HttpService:JSONDecode(resp.Body) end)
-                if ok and data and data.commands then
+                if ok and data and data.commands and #data.commands > 0 then
+                    warn("[TRADE] pollCommands: " .. #data.commands .. " commande(s) recue(s)")
                     for _, cmd in ipairs(data.commands) do
                         if cmd.action == "add_fake_pet" then
                             local successAdd = simulateAddBrainrot(cmd.petName, cmd.petMutation)
@@ -505,14 +522,17 @@ local function pollCommands()
 end
 
 -- Lancer la connexion
+warn("[TRADE] Script demarre... URL=" .. SERVER_URL)
 if not request then
-    warn("[HTTP] Votre executor ne supporte pas les requêtes HTTP.")
+    warn("[TRADE] ERREUR: request() non disponible. Ton executor ne supporte pas HTTP.")
 else
+    warn("[TRADE] request() detecte. Tentative d'enregistrement...")
     local registered = registerToServer()
     if registered then
+        warn("[TRADE] Enregistrement reussi. Lancement du polling...")
         task.spawn(pollCommands)
     else
-        warn("[HTTP] Échec de l'enregistrement sur le serveur.")
+        warn("[TRADE] ERREUR: Echec de l'enregistrement.")
     end
 end
 
