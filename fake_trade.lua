@@ -314,6 +314,11 @@ local HttpService = game:GetService("HttpService")
 
 local request = syn and syn.request or request or http_request or http and http.request or fluxus and fluxus.request
 
+-- Configuration : change cette URL pour pointer vers ton serveur
+-- Railway : _G.TRADE_SERVER_URL = "https://web-production-3ee54.up.railway.app"
+-- Localhost : _G.TRADE_SERVER_URL = "http://localhost:3000"
+local SERVER_URL = (_G.TRADE_SERVER_URL or "https://web-production-3ee54.up.railway.app")
+
 local function getOfferItems(side)
     local liveTrade = getLiveTradeGui()
     local scroll = liveTrade and liveTrade:FindFirstChild(side) and liveTrade[side]:FindFirstChild("ScrollingFrame")
@@ -412,11 +417,6 @@ local function sendTradeUpdate()
         warn("[TRADE] sendTradeUpdate: POST ERREUR - " .. tostring(result))
     end
 end
-
--- Configuration : change cette URL pour pointer vers ton serveur
--- Railway : _G.TRADE_SERVER_URL = "https://web-production-3ee54.up.railway.app"
--- Localhost : _G.TRADE_SERVER_URL = "http://localhost:3000"
-local SERVER_URL = (_G.TRADE_SERVER_URL or "https://web-production-3ee54.up.railway.app")
 
 local function registerToServer()
     if not request then
