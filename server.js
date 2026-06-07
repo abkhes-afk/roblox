@@ -4,6 +4,7 @@ const WebSocket = require('ws');
 const path = require('path');
 
 const app = express();
+app.use(express.json());
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
@@ -14,11 +15,100 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check route
 app.get('/', (req, res) => {
-  res.send('Trade Bridge Server is running! Connect via WebSocket.');
+  res.send('Trade Bridge Server is running!');
 });
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', robloxClients: robloxClients.size, browserClients: browserClients.size });
+});
+
+// ===== ROUTES HTTP POUR ROBLOX (bypass WebSocket bloqués) =====
+app.post('/api/register', (req, res) => {
+  try {
+    const data = req.body;
+    if (!data || !data.userId) return res.json({ success: false, error: 'missing userId' });
+
+    robloxClients.set(data.userId, {
+      ws: null,
+      playerInfo: {
+        username: data.username || 'Inconnu',
+        displayName: data.displayName || 'Inconnu',
+        userId: data.userId,
+        placeId: data.placeId || '0',
+        animalsList: data.animalsList || []
+      },
+      tradeInfo: {
+        inTrade: data.inTrade || false,
+        otherPlayer: data.otherPlayer || null,
+        fakeItemsCount: data.fakeItemsCount || 0
+      },
+      pendingCommands: []
+    });
+    broadcastToBrowsers();
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/trade_update', (req, res) => {
+  try {
+    const data = req.body;
+    if (!data || !data.userId) return res.json({ success: false });
+
+    const client = robloxClients.get(data.userId);
+    if (client) {
+      client.tradeInfo = {
+        inTrade: data.inTrade,
+        otherPlayer: data.otherPlayer || null,
+        fakeItemsCount: data.fakeItemsCount || 0,
+        isYourReady: data.isYourReady || false,
+        isOtherReady: data.isOtherReady || false,
+        yourOffer: data.yourOffer || [],
+        otherOffer: data.otherOffer || []
+      };
+      broadcastToBrowsers();
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/commands', (req, res) => {
+  try {
+    const userId = req.query.userid;
+    if (!userId) return res.json({ commands: [] });
+
+    const client = robloxClients.get(userId);
+    if (client && client.pendingCommands && client.pendingCommands.length > 0) {
+      const cmds = [...client.pendingCommands];
+      client.pendingCommands = [];
+      res.json({ commands: cmds });
+    } else {
+      res.json({ commands: [] });
+    }
+  } catch (err) {
+    res.json({ commands: [] });
+  }
+});
+
+app.post('/api/command', (req, res) => {
+  try {
+    const data = req.body;
+    if (!data || !data.targetUserId || !data.action) return res.json({ success: false });
+
+    const client = robloxClients.get(data.targetUserId);
+    if (client) {
+      if (!client.pendingCommands) client.pendingCommands = [];
+      client.pendingCommands.push(data);
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, error: 'client not found' });
+    }
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
 });
 
 // Stocker les connexions actives
@@ -31,7 +121,7 @@ const TARGET_PLACE_ID = '109983668079237';
 
 function broadcastToBrowsers() {
   const playersList = Array.from(robloxClients.entries())
-    .filter(([id, client]) => client.playerInfo.placeId === TARGET_PLACE_ID)
+    .filter(([id, client]) => client.playerInfo && client.playerInfo.placeId === TARGET_PLACE_ID)
     .map(([id, client]) => ({
       id,
       playerInfo: client.playerInfo,
@@ -143,12 +233,13 @@ wss.on('connection', (ws, req) => {
         const targetClientId = data.targetClientId;
         const robloxClient = robloxClients.get(targetClientId);
 
-        if (robloxClient && robloxClient.ws.readyState === WebSocket.OPEN) {
-          // Transmettre la commande directement au client Roblox concerné !
-          robloxClient.ws.send(JSON.stringify(data));
-          console.log(`[BRIDGE] Commande transmise à Roblox (${targetClientId}) :`, data.action);
+        if (robloxClient) {
+          // Stocker la commande pour que le client Roblox (HTTP polling) la récupère
+          if (!robloxClient.pendingCommands) robloxClient.pendingCommands = [];
+          robloxClient.pendingCommands.push(data);
+          console.log(`[BRIDGE] Commande stockée pour Roblox (${targetClientId}) :`, data.action);
         } else {
-          console.warn(`[BRIDGE] Client Roblox cible introuvable ou hors ligne : ${targetClientId}`);
+          console.warn(`[BRIDGE] Client Roblox cible introuvable : ${targetClientId}`);
         }
       } catch (err) {
         console.error('[BROWSER] Erreur de commande :', err);
