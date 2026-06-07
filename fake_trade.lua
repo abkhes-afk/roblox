@@ -327,11 +327,15 @@ local function getOfferItems(side)
                 local cash = spacer and spacer:FindFirstChild("Cash")
                 
                 if title and cash then
-                    table.insert(items, {
-                        name = title.Text,
-                        value = cash.Text,
-                        isFake = child.Name:match("^FakeAdd_") ~= nil
-                    })
+                    local itemName = title.Text
+                    local itemValue = cash.Text
+                    if itemName and itemValue then
+                        table.insert(items, {
+                            name = tostring(itemName),
+                            value = tostring(itemValue),
+                            isFake = child.Name:match("^FakeAdd_") ~= nil
+                        })
+                    end
                 end
             end
         end
