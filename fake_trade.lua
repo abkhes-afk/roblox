@@ -340,10 +340,15 @@ local function getOfferItems(side)
 end
 
 local function sendTradeUpdate()
-    if not request then return end
+    if not request then
+        warn("[TRADE] sendTradeUpdate: request() est nil")
+        return
+    end
     
     local liveTrade = getLiveTradeGui()
     local otherName = "Inconnu"
+    local inTrade = isTradeActive()
+    
     if liveTrade then
         local other = liveTrade:FindFirstChild("Other")
         if other then
@@ -377,14 +382,16 @@ local function sendTradeUpdate()
     local yourOfferItems = getOfferItems("Your")
     local otherOfferItems = getOfferItems("Other")
     
-    pcall(function()
-        request({
+    warn("[TRADE] sendTradeUpdate: inTrade=" .. tostring(inTrade) .. " other=" .. otherName .. " yourItems=" .. #yourOfferItems .. " otherItems=" .. #otherOfferItems)
+    
+    local success, result = pcall(function()
+        return request({
             Url = SERVER_URL .. "/api/trade_update",
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = HttpService:JSONEncode({
                 userId = localPlayer.UserId,
-                inTrade = isTradeActive(),
+                inTrade = inTrade,
                 otherPlayer = otherName,
                 fakeItemsCount = #fakeItemsList,
                 isYourReady = isYourFakeReady,
@@ -394,6 +401,12 @@ local function sendTradeUpdate()
             })
         })
     end)
+    
+    if success then
+        warn("[TRADE] sendTradeUpdate: POST OK")
+    else
+        warn("[TRADE] sendTradeUpdate: POST ERREUR - " .. tostring(result))
+    end
 end
 
 -- Configuration : change cette URL pour pointer vers ton serveur
@@ -594,11 +607,12 @@ RunService.RenderStepped:Connect(function()
     local currentTradeState = isTradeActive()
     
     if currentTradeState ~= lastTradeState then
+        warn("[TRADE] Etat trade change: " .. tostring(lastTradeState) .. " -> " .. tostring(currentTradeState))
         resetFakeTradeState()
         if currentTradeState == false then
-            -- Trade terminé, simulation nettoyée
+            warn("[TRADE] Trade termine")
         else
-            -- Nouveau trade détecté
+            warn("[TRADE] Nouveau trade detecte!")
         end
         sendTradeUpdate()
     end
