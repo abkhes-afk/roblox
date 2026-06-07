@@ -1,0 +1,228 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
+local LocalPlayer = Players.LocalPlayer
+
+--------------------------------------------------
+-- CONTROLLER
+--------------------------------------------------
+local CONTROLLER = "SpeedFraks"
+
+--------------------------------------------------
+-- UTILS
+--------------------------------------------------
+local function hrp(c) return c and c:FindFirstChild("HumanoidRootPart") end
+local function hum(c) return c and c:FindFirstChildOfClass("Humanoid") end
+
+--------------------------------------------------
+-- ========== SPIN ==========
+--------------------------------------------------
+local spinning = false
+local spinTarget = nil
+local DISTANCE, ROTATION_SPEED, HEIGHT_OFFSET = 5, 3, 0
+
+RunService.Heartbeat:Connect(function()
+    if not spinning or not spinTarget or not spinTarget.Character then return end
+    local center = hrp(spinTarget.Character)
+    if not center then return end
+
+    local list = {}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= spinTarget and p.Character and hrp(p.Character) then
+            table.insert(list,p)
+        end
+    end
+    if #list == 0 then return end
+
+    for i,p in ipairs(list) do
+        local r = hrp(p.Character)
+        local a = (i/#list)*math.pi*2 + tick()*ROTATION_SPEED
+        r.CFrame = CFrame.new(
+            center.Position + Vector3.new(math.cos(a)*DISTANCE, HEIGHT_OFFSET, math.sin(a)*DISTANCE),
+            center.Position
+        )
+        r.AssemblyLinearVelocity = Vector3.zero
+        r.AssemblyAngularVelocity = Vector3.zero
+    end
+end)
+
+--------------------------------------------------
+-- ========== BRING ALL ==========
+--------------------------------------------------
+local bringAll = false
+
+RunService.Heartbeat:Connect(function()
+    if not bringAll then return end
+    local controller = Players:FindFirstChild(CONTROLLER)
+    if not controller or not controller.Character then return end
+    local cHRP = hrp(controller.Character)
+    if not cHRP then return end
+
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= controller and p.Character and hrp(p.Character) then
+            hrp(p.Character).CFrame =
+                cHRP.CFrame * CFrame.new(math.random(-3,3),0,math.random(-3,3))
+        end
+    end
+end)
+
+--------------------------------------------------
+-- ========== SWIM (AUTO REJOIN) ==========
+--------------------------------------------------
+local swimEnabled = false
+local swimTarget = nil
+local swimTargetName = nil
+local Y_OFFSET = -25
+
+local function tryResolveSwimTarget()
+    if not swimTargetName then return end
+    local p = Players:FindFirstChild(swimTargetName)
+    if p then swimTarget = p end
+end
+
+Players.PlayerAdded:Connect(function(p)
+    if swimEnabled and swimTargetName and p.Name == swimTargetName then
+        swimTarget = p
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if swimTarget and p == swimTarget then
+        swimTarget = nil
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not swimEnabled then return end
+    if LocalPlayer.Name == CONTROLLER then return end
+
+    if not swimTarget or not swimTarget.Character then
+        tryResolveSwimTarget()
+        return
+    end
+
+    local myChar = LocalPlayer.Character
+    local myHRP = hrp(myChar)
+    local myHum = hum(myChar)
+    local vHRP = hrp(swimTarget.Character)
+    if not (myHRP and myHum and vHRP) then return end
+
+    for _,part in ipairs(myChar:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
+    end
+
+    myHRP.CFrame = vHRP.CFrame * CFrame.new(0, Y_OFFSET, 0)
+    myHum:ChangeState(Enum.HumanoidStateType.Swimming)
+    myHRP.AssemblyLinearVelocity = Vector3.new(0, 500, 0)
+end)
+
+--------------------------------------------------
+-- ========== SPAM ==========
+--------------------------------------------------
+local spamRunning = false
+
+local function spamChat(maxCount, duration, text)
+    spamRunning = true
+    local start = tick()
+    local sent = 0
+
+    while spamRunning do
+        if duration ~= "inf" then
+            if tick() - start >= duration then break end
+            if sent >= maxCount then break end
+        end
+        TextChatService.ChatInputBarConfiguration
+            .TargetTextChannel:SendAsync(text)
+        sent += 1
+        task.wait(1)
+    end
+    spamRunning = false
+end
+
+--------------------------------------------------
+-- ========== KILLALL ==========
+--------------------------------------------------
+local killAllRunning = false
+
+task.spawn(function()
+    while true do
+        if killAllRunning then
+            for _,p in ipairs(Players:GetPlayers()) do
+                if p.Character and hum(p.Character) then
+                    hum(p.Character).Health = 0
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+end)
+
+--------------------------------------------------
+-- ========== COMMANDES ==========
+--------------------------------------------------
+local function onChat(msg,sender)
+    if sender.Name ~= CONTROLLER then return end
+    local args = string.split(msg," ")
+    local cmd = args[1]:lower()
+
+    if cmd=="/spin" and args[2] then
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p.Name:lower():sub(1,#args[2])==args[2]:lower() then
+                spinTarget=p; spinning=true; break
+            end
+        end
+
+    elseif cmd=="/unspin" then
+        spinning=false; spinTarget=nil
+
+    elseif cmd=="/bringall" then
+        bringAll=true
+
+    elseif cmd=="/unbringall" then
+        bringAll=false
+
+    elseif cmd=="/swim" and args[2] then
+        swimTargetName = nil
+        swimTarget = nil
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p.Name:lower():sub(1,#args[2])==args[2]:lower() then
+                swimTarget=p
+                swimTargetName=p.Name
+                swimEnabled=true
+                break
+            end
+        end
+
+    elseif cmd=="/unswim" then
+        swimEnabled=false
+        swimTarget=nil
+        swimTargetName=nil
+
+    elseif cmd=="/spam" and args[2] and args[3] then
+        local amount=tonumber(args[2])
+        local tArg=args[3]
+        local duration=tArg=="inf" and "inf" or tonumber(tArg)
+        local text=table.concat(args," ",4)
+        if amount and text~="" then
+            task.spawn(function()
+                spamChat(amount,duration,text)
+            end)
+        end
+
+    elseif cmd=="/unspam" then
+        spamRunning=false
+
+    elseif cmd=="/killall" then
+        killAllRunning=true
+
+    elseif cmd=="/unkillall" then
+        killAllRunning=false
+    end
+end
+
+for _,p in ipairs(Players:GetPlayers()) do
+    p.Chatted:Connect(function(m) onChat(m,p) end)
+end
+Players.PlayerAdded:Connect(function(p)
+    p.Chatted:Connect(function(m) onChat(m,p) end)
+end)

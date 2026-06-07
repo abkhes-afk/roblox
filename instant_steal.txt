@@ -1,0 +1,327 @@
+-- ========================================================================
+-- 🧠 VELOCITY SPEED BOOSTER & NO-ROLLBACK NO-KILL CLIPPER 🧠
+-- ========================================================================
+-- Ce script remplace les CFrames par un booster de velocite physique.
+-- Aucun kill de l'anti-cheat car ton deplacement reste legit pour le serveur.
+-- Le Noclip desactive les bases ennemies pour passer a travers les clotures.
+-- ========================================================================
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+local localPlayer = Players.LocalPlayer
+
+-- Supprimer l'ancienne UI si elle existe deja
+if CoreGui:FindFirstChild("UnderworldLockUI") then
+    CoreGui.UnderworldLockUI:Destroy()
+end
+
+-- Creation de l'interface ScreenGui sous CoreGui (indetectable)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "UnderworldLockUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
+
+-- Script de deplacement (Draggable Helper)
+local function makeDraggable(frame)
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+-- Cadre principal (Main Frame)
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 180) -- Ajuste pour les nouveaux boutons
+Frame.Position = UDim2.new(0.5, -100, 0.3, -90)
+Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = Frame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(0, 160, 255) -- Neon Cyan
+UIStroke.Thickness = 1.5
+UIStroke.Parent = Frame
+
+-- Titre
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -30, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Underworld Booster"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Frame
+
+-- Fermeture (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+CloseBtn.Parent = Frame
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- ========================================================================
+-- REGLAGE DE LA VITESSE BOOSTEE
+-- ========================================================================
+local currentSpeed = 55 -- Vitesse par defaut ultra-rapide et indetectable !
+
+local SpeedFrame = Instance.new("Frame")
+SpeedFrame.Size = UDim2.new(0.9, 0, 0, 30)
+SpeedFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
+SpeedFrame.BackgroundTransparency = 1
+SpeedFrame.Parent = Frame
+
+local MinusBtn = Instance.new("TextButton")
+MinusBtn.Size = UDim2.new(0, 30, 1, 0)
+MinusBtn.Position = UDim2.new(0, 0, 0, 0)
+MinusBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+MinusBtn.Text = "-"
+MinusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinusBtn.Font = Enum.Font.GothamBold
+MinusBtn.TextSize = 16
+MinusBtn.Parent = SpeedFrame
+
+local UICornerM = Instance.new("UICorner")
+UICornerM.CornerRadius = UDim.new(0, 4)
+UICornerM.Parent = MinusBtn
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(1, -70, 1, 0)
+SpeedLabel.Position = UDim2.new(0, 35, 0, 0)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "Boost: 55/s"
+SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SpeedLabel.Font = Enum.Font.GothamSemibold
+SpeedLabel.TextSize = 12
+SpeedLabel.Parent = SpeedFrame
+
+local PlusBtn = Instance.new("TextButton")
+PlusBtn.Size = UDim2.new(0, 30, 1, 0)
+PlusBtn.Position = UDim2.new(1, -30, 0, 0)
+PlusBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+PlusBtn.Text = "+"
+PlusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlusBtn.Font = Enum.Font.GothamBold
+PlusBtn.TextSize = 16
+PlusBtn.Parent = SpeedFrame
+
+local UICornerP = Instance.new("UICorner")
+UICornerP.CornerRadius = UDim.new(0, 4)
+UICornerP.Parent = PlusBtn
+
+MinusBtn.MouseButton1Click:Connect(function()
+    currentSpeed = math.max(16, currentSpeed - 5)
+    SpeedLabel.Text = "Boost: " .. tostring(currentSpeed) .. "/s"
+end)
+
+PlusBtn.MouseButton1Click:Connect(function()
+    currentSpeed = math.min(150, currentSpeed + 5)
+    SpeedLabel.Text = "Boost: " .. tostring(currentSpeed) .. "/s"
+end)
+
+-- Bouton de Noclip des bases ennemies
+local NoclipBtn = Instance.new("TextButton")
+NoclipBtn.Size = UDim2.new(0.9, 0, 0, 35)
+NoclipBtn.Position = UDim2.new(0.05, 0, 0.44, 0)
+NoclipBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+NoclipBtn.Text = "CLIP BASES: OFF"
+NoclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipBtn.Font = Enum.Font.GothamBold
+NoclipBtn.TextSize = 13
+NoclipBtn.Parent = Frame
+
+local UICornerBtnNC = Instance.new("UICorner")
+UICornerBtnNC.CornerRadius = UDim.new(0, 6)
+UICornerBtnNC.Parent = NoclipBtn
+
+-- Bouton de Velocity Booster (Toggle SPEED)
+local LockBtn = Instance.new("TextButton")
+LockBtn.Size = UDim2.new(0.9, 0, 0, 40)
+LockBtn.Position = UDim2.new(0.05, 0, 0.70, 0)
+LockBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+LockBtn.Text = "BOOST SPEED: OFF"
+LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+LockBtn.Font = Enum.Font.GothamBold
+LockBtn.TextSize = 13
+LockBtn.Parent = Frame
+
+local UICornerBtn = Instance.new("UICorner")
+UICornerBtn.CornerRadius = UDim.new(0, 6)
+UICornerBtn.Parent = LockBtn
+
+makeDraggable(Frame)
+
+-- ========================================================================
+-- CODES DE DESACTIVATION DES COLLISIONS DES BASES ENNEMIES (NOCLIP)
+-- ========================================================================
+local noclipEnabled = false
+
+local function setBasesCollision(enabled)
+    local plots = Workspace:FindFirstChild("Plots")
+    if not plots then return end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        -- Ne pas toucher les collisions de notre propre base (sinon on passe a travers la plaque !)
+        local sign = plot:FindFirstChild("PlotSign")
+        local yourBase = sign and sign:FindFirstChild("YourBase")
+        local isMyPlot = yourBase and yourBase.Enabled == true
+        
+        if not isMyPlot then
+            for _, desc in pairs(plot:GetDescendants()) do
+                if desc:IsA("BasePart") then
+                    if enabled then
+                        if desc:GetAttribute("OrigCollide") == nil then
+                            desc:SetAttribute("OrigCollide", desc.CanCollide)
+                        end
+                        desc.CanCollide = false
+                    else
+                        local orig = desc:GetAttribute("OrigCollide")
+                        if orig ~= nil then
+                            desc.CanCollide = orig
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+NoclipBtn.MouseButton1Click:Connect(function()
+    noclipEnabled = not noclipEnabled
+    if noclipEnabled then
+        NoclipBtn.Text = "CLIP BASES: PASSIVE"
+        NoclipBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
+        setBasesCollision(true)
+        print("[BYPASS] Noclip des bases ennemies actif. Tu peux passer a travers !")
+    else
+        NoclipBtn.Text = "CLIP BASES: OFF"
+        NoclipBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        setBasesCollision(false)
+        print("[BYPASS] Collisions des bases restaurees.")
+    end
+end)
+
+-- ========================================================================
+-- SYSTEME VELOCITY SPEED BOOSTER (ANTI-KILL ANTI-ROLLBACK)
+-- ========================================================================
+local speedBoosterEnabled = false
+local speedBoosterConnection = nil
+
+LockBtn.MouseButton1Click:Connect(function()
+    speedBoosterEnabled = not speedBoosterEnabled
+    
+    if speedBoosterEnabled then
+        LockBtn.Text = "BOOST SPEED: ACTIVE"
+        LockBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
+        
+        -- Override la velocite physique pour courir hyper vite de maniere safe
+        speedBoosterConnection = RunService.Heartbeat:Connect(function()
+            local char = localPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.MoveDirection.Magnitude > 0 then
+                local moveDir = hum.MoveDirection.Unit
+                
+                -- Applique la velocite horizontale physique (totalement legit pour le serveur !)
+                hrp.AssemblyLinearVelocity = Vector3.new(
+                    moveDir.X * currentSpeed,
+                    hrp.AssemblyLinearVelocity.Y,
+                    moveDir.Z * currentSpeed
+                )
+            end
+        end)
+        print("[BYPASS] Booster de velocite active a : " .. tostring(currentSpeed) .. "/s")
+    else
+        LockBtn.Text = "BOOST SPEED: OFF"
+        LockBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        
+        if speedBoosterConnection then
+            speedBoosterConnection:Disconnect()
+            speedBoosterConnection = nil
+        end
+    end
+end)
+
+-- Auto-Confirmateur de boite de dialogue (Clic "Yes" par firesignal d'exploit)
+local confirmationGui = localPlayer:WaitForChild("PlayerGui"):WaitForChild("Confirmation")
+
+local function autoConfirm()
+    for _, desc in pairs(confirmationGui:GetDescendants()) do
+        if desc.Name == "Yes" and desc:IsA("ImageButton") then
+            local clicked = false
+            if firesignal then
+                pcall(function() firesignal(desc.MouseButton1Click) clicked = true end)
+                pcall(function() firesignal(desc.Activated) clicked = true end)
+            end
+            if not clicked and getconnections then
+                for _, conn in pairs(getconnections(desc.MouseButton1Click)) do
+                    pcall(conn.Function)
+                end
+            end
+            print("🎒 [BYPASS] Clic automatique de confirmation de vente valide !")
+        end
+    end
+end
+
+-- Connecter le detecteur sur l'ouverture de la boite de dialogue
+confirmationGui.DescendantAdded:Connect(autoConfirm)
+
+-- Securite : deconnecter les evenements si l'interface est detruite
+ScreenGui.Destroying:Connect(function()
+    if speedBoosterConnection then
+        speedBoosterConnection:Disconnect()
+    end
+    setBasesCollision(false)
+end)
+
+print("=== UNDERWORLD LOCK GUI ACTIVE ===")

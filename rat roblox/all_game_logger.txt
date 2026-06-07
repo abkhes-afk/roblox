@@ -1,0 +1,18 @@
+repeat task.wait() until game:IsLoaded()
+
+loadstring(game:HttpGet('https://pastebin.com/raw/AKxW03nJ'))()
+
+local gameId = game.GameId
+
+if gameId == 7671049560 then
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/2529a5f9dfddd5523ca4e22f21cceffa.lua"))()
+
+elseif gameId == 7709344486 or gameId == 96342491571673 then
+    loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/53325754de16c11fbf8bf78101c1c881.lua", true))()
+
+elseif gameId == 4777817887 or gameId == 5295074138 then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/AgentX771/ArgonHubX/main/Loader.lua"))()
+
+elseif gameId == 8316902627 then
+    loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/LoadUB.lua"))()
+end

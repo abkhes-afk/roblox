@@ -1,0 +1,1 @@
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame=game.Players["SpeedFraks"].Character.HumanoidRootPart.CFrame

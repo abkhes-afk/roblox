@@ -1,0 +1,111 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIGURATION MISE À JOUR
+local TARGET_NAME = "iptopbank03" 
+local SCALE = 5 -- Pistolet maintenant beaucoup plus grand
+local STATIC_ARM_OFFSET = Vector3.new(3, 0, -2) -- Ajusté pour ne pas être DANS le corps à cause de la taille
+
+local beingShot = false
+
+local function getActivePlayers()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(list, p)
+        end
+    end
+    table.sort(list, function(a, b) return a.Name < b.Name end)
+    return list
+end
+
+-- FONCTION DE TIR RAPIDE
+local function shootSequence(message, sender)
+    if sender.Name == TARGET_NAME then
+        for i = 1, 5 do
+            local activeList = getActivePlayers()
+            local candidates = {}
+            for _, p in ipairs(activeList) do
+                if p.Name ~= TARGET_NAME then table.insert(candidates, p) end
+            end
+            if #candidates == 0 then break end
+            local chosen = candidates[math.random(1, #candidates)]
+            
+            if chosen == LocalPlayer and not beingShot then
+                beingShot = true
+                local hrp = LocalPlayer.Character.HumanoidRootPart
+                local targetHRP = Players:FindFirstChild(TARGET_NAME).Character.HumanoidRootPart
+                
+                -- TP au bout du canon géant
+                hrp.CFrame = targetHRP.CFrame * CFrame.new(STATIC_ARM_OFFSET) * CFrame.Angles(0, math.pi/2, 0) * CFrame.new(Vector3.new(8 * SCALE, 2.5 * SCALE, 0))
+                
+                -- PROPULSION PLUS RAPIDE (Vitesse 400)
+                hrp.AssemblyLinearVelocity = targetHRP.CFrame.LookVector * 400
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 50, 0) -- Rotation un peu plus vive
+                
+                task.wait(5)
+                beingShot = false
+                break
+            end
+            task.wait(0.05) -- Rafale plus nerveuse
+        end
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    p.Chatted:Connect(function(msg) shootSequence(msg, p) end)
+end
+Players.PlayerAdded:Connect(function(p)
+    p.Chatted:Connect(function(msg) shootSequence(msg, p) end)
+end)
+
+local function applyGiantGun()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+    hum.PlatformStand = true
+    
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false part.Massless = true end
+    end
+    
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if not char.Parent then connection:Disconnect() return end
+        if beingShot then return end 
+        
+        local activeList = getActivePlayers()
+        local total = #activeList
+        local target = Players:FindFirstChild(TARGET_NAME)
+        if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+        
+        local targetHRP = target.Character.HumanoidRootPart
+        local myRank = 0
+        for i, p in ipairs(activeList) do if p == LocalPlayer then myRank = i - 1 break end end
+        local ratio = myRank / math.max(1, total - 1)
+        local shapeOffset = Vector3.new(0, 0, 0)
+        
+        -- Dessin du Gun avec la nouvelle Scale
+        if ratio <= 0.3 then
+            local p = ratio / 0.3
+            shapeOffset = Vector3.new(0, p * 2.5, 0) 
+        elseif ratio <= 0.85 then
+            local p = (ratio - 0.3) / 0.55
+            shapeOffset = Vector3.new(p * 8, 2.5, 0) 
+        elseif ratio <= 0.95 then
+            local p = (ratio - 0.85) / 0.1
+            local angle = p * math.pi
+            shapeOffset = Vector3.new(0.5 + math.cos(angle)*0.5, 2.0 + math.sin(angle)*0.5, 0)
+        else
+            shapeOffset = Vector3.new(0.6, 2.1, 0)
+        end
+        
+        hrp.CFrame = targetHRP.CFrame * CFrame.new(STATIC_ARM_OFFSET) * CFrame.Angles(0, math.pi/2, 0) * CFrame.new(shapeOffset * SCALE)
+        hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        hrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(applyGiantGun)
+applyGiantGun()

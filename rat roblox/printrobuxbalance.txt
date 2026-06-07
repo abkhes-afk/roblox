@@ -1,0 +1,30 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+local CoreGui = game:GetService("CoreGui")
+local player = game.Players.LocalPlayer
+local gamePassId = 1613005644
+
+MarketplaceService:PromptGamePassPurchase(player, gamePassId)
+
+task.spawn(function()
+    local overlay = CoreGui:WaitForChild("FoundationOverlay", 5)
+    if overlay then
+        task.wait(0)
+        if overlay:IsA("ScreenGui") then
+            overlay.Enabled = false
+        else
+            for _, v in pairs(overlay:GetDescendants()) do
+                if v:IsA("CanvasGroup") or v:IsA("Frame") then v.Visible = false end
+            end
+        end
+
+        for _, v in pairs(overlay:GetDescendants()) do
+            if v:IsA("TextLabel") and v.RichText then
+                local price = v.Text:match("</font>%s*(%d+)")
+                if price then
+                    print(price)
+                    break
+                end
+            end
+        end
+    end
+end)

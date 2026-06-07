@@ -1110,8 +1110,24 @@
         inventory.forEach((item, idx) => {
           const uniqueImgId = `img-real-pet-${player.id}-${idx}`;
           
+          const mutationColors = {
+            'Gold': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+            'Diamond': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+            'Bloodrot': 'bg-red-50 text-red-800 border-red-200',
+            'Rainbow': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+            'Candy': 'bg-pink-50 text-pink-700 border-pink-200',
+            'Lava': 'bg-orange-50 text-orange-700 border-orange-200',
+            'Galaxy': 'bg-purple-50 text-purple-700 border-purple-200',
+            'YinYang': 'bg-gray-50 text-gray-800 border-gray-200',
+            'Yin Yang': 'bg-gray-50 text-gray-800 border-gray-200',
+            'Radioactive': 'bg-lime-50 text-lime-700 border-lime-200',
+            'Cursed': 'bg-rose-50 text-rose-700 border-rose-200',
+            'Divine': 'bg-yellow-50 text-yellow-600 border-yellow-200',
+            'Cyber': 'bg-sky-50 text-sky-700 border-sky-200'
+          };
+          const mutationClass = item.mutation ? (mutationColors[item.mutation] || 'bg-amber-50 text-amber-700 border-amber-200') : '';
           const mutationBadge = item.mutation && item.mutation !== 'Normal'
-            ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.mutation)}</span>`
+            ? `<span class="${mutationClass} text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider border">${escapeHtml(item.mutation)}</span>`
             : '';
             
           const rarityBadge = item.rarity

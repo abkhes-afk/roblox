@@ -1,0 +1,42 @@
+JoinGroup = function(groupid)
+    pcall(function()
+        game:GetService("GroupService"):PromptJoinAsync(groupid)
+    end)
+
+    repeat task.wait(0.1) until game:GetService("CoreGui").RobloxGui:FindFirstChild("FocusNavigationCoreScriptsWrapper")
+    repeat 
+        pcall(function()
+            task.wait(0.1)
+            if game:GetService("CoreGui").RobloxGui.FocusNavigationCoreScriptsWrapper.Dialog.Dialog.DialogInner.DialogBody.DialogActions.ActionsContainer["1-Join Community"] then
+                task.wait(0.1)
+                btn = game:GetService("CoreGui").RobloxGui.FocusNavigationCoreScriptsWrapper.Dialog.Dialog.DialogInner.DialogBody.DialogActions.ActionsContainer["1-Join Community"]
+
+                local GuiService = game:GetService("GuiService")
+
+                local function toggleUiNavigationPermissions(newState)
+                    GuiService.GuiNavigationEnabled = newState
+                    GuiService.AutoSelectGuiEnabled = newState 
+                    
+                    if newState == false then
+                        GuiService.SelectedObject = nil
+                    end
+                end
+
+                toggleUiNavigationPermissions(true)
+
+                task.wait(0.1)
+                btn.Selectable = true
+                GuiService.SelectedObject = btn
+                task.wait(0.1)
+                VirtualInputManager = game:GetService("VirtualInputManager")
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait()
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.1)
+                toggleUiNavigationPermissions(false)
+            end
+        end)
+    until not game:GetService("CoreGui").RobloxGui:FindFirstChild("FocusNavigationCoreScriptsWrapper")
+end
+
+JoinGroup(5522949)

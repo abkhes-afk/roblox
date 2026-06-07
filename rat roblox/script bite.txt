@@ -1,0 +1,93 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIGURATION GÉOMÉTRIQUE STRICTE
+local TARGET_NAME = "iptopbank03" 
+local BITE_SPACING = 3.5 -- Espace entre chaque segment pour éviter l'empilement
+local MAX_BITE_PLAYERS = 3 -- Limite pour que le zizi fasse environ 4 mètres
+local COUILLE_OFFSET_X = 2.5 -- Écartement des couilles
+local FORWARD_OFFSET = 1.0 -- Distance devant toi
+local GROUND_HEIGHT = -1.5 
+
+local function getActivePlayers()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+            if p.Character.Humanoid.Health > 0 then
+                table.insert(list, p)
+            end
+        end
+    end
+    -- Tri par nom pour fixer les rôles (évite que les couilles disparaissent)
+    table.sort(list, function(a, b) return a.Name < b.Name end)
+    return list
+end
+
+local function applyFormation()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+    
+    hum.PlatformStand = true
+    
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false part.Massless = true end
+    end
+    
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if not char.Parent then connection:Disconnect() return end
+        if LocalPlayer.Name == TARGET_NAME then return end 
+        
+        local allPlayers = getActivePlayers()
+        local participants = {}
+        for _, p in ipairs(allPlayers) do
+            if p.Name ~= TARGET_NAME then table.insert(participants, p) end
+        end
+        
+        local target = Players:FindFirstChild(TARGET_NAME)
+        if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+        
+        local targetHRP = target.Character.HumanoidRootPart
+        local myRank = 0
+        for i, p in ipairs(participants) do if p == LocalPlayer then myRank = i break end end
+        if myRank == 0 then return end
+
+        local pos = Vector3.new(0, 0, 0)
+        local rot = CFrame.Angles(0, 0, 0)
+        local ventralRotation = CFrame.Angles(math.rad(-90), 0, 0)
+
+        -- 1. SYSTÈME DE PRIORITÉ COUILLES
+        if myRank == 1 then
+            -- COUILLE GAUCHE (Bloquée ici tant que le joueur est présent)
+            pos = Vector3.new(-COUILLE_OFFSET_X, GROUND_HEIGHT, -FORWARD_OFFSET)
+            rot = ventralRotation * CFrame.Angles(0, 0, math.rad(90)) 
+        elseif myRank == 2 then
+            -- COUILLE DROITE (Bloquée ici)
+            pos = Vector3.new(COUILLE_OFFSET_X, GROUND_HEIGHT, -FORWARD_OFFSET)
+            rot = ventralRotation * CFrame.Angles(0, 0, math.rad(-90)) 
+
+        -- 2. ZIZI ESPACÉ (4 MÈTRES)
+        else
+            local biteIndex = myRank - 2
+            
+            -- Si trop de joueurs, on les cache ou on les éloigne pour ne pas faire un tas
+            if biteIndex > MAX_BITE_PLAYERS then
+                pos = Vector3.new(0, -50, 0) -- Cache les joueurs en trop sous la map
+            else
+                -- Calcul de la profondeur avec espacement fixe pour éviter le "même endroit"
+                local depth = FORWARD_OFFSET + (biteIndex * BITE_SPACING)
+                pos = Vector3.new(0, GROUND_HEIGHT, -depth) 
+                rot = ventralRotation
+            end
+        end
+        
+        hrp.CFrame = targetHRP.CFrame * CFrame.new(pos) * rot
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(applyFormation)
+applyFormation()

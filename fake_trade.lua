@@ -426,7 +426,7 @@ local function getPlayerRealInventory()
                                 petValue = text
                             elseif text == "Secret" or text:find("Secret") or text == "Mythique" or text == "Legendary" or text == "Rare" or text == "Common" or text:find("Secret") or text:find("Mythique") then
                                 petRarity = text:gsub("%.", "")
-                            elseif text == "Or" or text == "Gold" or text == "Fire" or text == "Lave" or text == "Galaxy" or text == "Fleur" or text == "Épineux" or text:find("Or") or text:find("Gold") then
+                            elseif text == "Gold" or text == "Diamond" or text == "Bloodrot" or text == "Rainbow" or text == "Candy" or text == "Lava" or text == "Galaxy" or text == "YinYang" or text == "Yin Yang" or text == "Radioactive" or text == "Cursed" or text == "Divine" or text == "Cyber" or text:find("Gold") or text:find("Diamond") or text:find("Bloodrot") or text:find("Rainbow") or text:find("Candy") or text:find("Lava") or text:find("Galaxy") or text:find("YinYang") or text:find("Yin Yang") or text:find("Radioactive") or text:find("Cursed") or text:find("Divine") or text:find("Cyber") then
                                 petMutation = text
                             else
                                 -- Si ce n'est ni un revenu, ni une valeur, ni une rareté, c'est le nom de l'animal !
