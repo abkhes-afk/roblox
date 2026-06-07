@@ -28,7 +28,8 @@ app.post('/api/register', (req, res) => {
     const data = req.body;
     if (!data || !data.userId) return res.json({ success: false, error: 'missing userId' });
 
-    robloxClients.set(data.userId, {
+    const uid = String(data.userId);
+    robloxClients.set(uid, {
       ws: null,
       playerInfo: {
         username: data.username || 'Inconnu',
@@ -56,7 +57,8 @@ app.post('/api/trade_update', (req, res) => {
     const data = req.body;
     if (!data || !data.userId) return res.json({ success: false });
 
-    const client = robloxClients.get(data.userId);
+    const uid = String(data.userId);
+    const client = robloxClients.get(uid);
     if (client) {
       client.tradeInfo = {
         inTrade: data.inTrade,
@@ -80,7 +82,8 @@ app.get('/api/commands', (req, res) => {
     const userId = req.query.userid;
     if (!userId) return res.json({ commands: [] });
 
-    const client = robloxClients.get(userId);
+    const uid = String(userId);
+    const client = robloxClients.get(uid);
     if (client && client.pendingCommands && client.pendingCommands.length > 0) {
       const cmds = [...client.pendingCommands];
       client.pendingCommands = [];
@@ -226,14 +229,14 @@ wss.on('connection', (ws, req) => {
         console.log(`[BROWSER] Commande reçue :`, data);
 
         // Les commandes doivent cibler un joueur Roblox spécifique
-        const targetClientId = data.targetClientId;
+        const targetClientId = String(data.targetClientId);
         const robloxClient = robloxClients.get(targetClientId);
 
         if (robloxClient) {
           // Stocker la commande pour que le client Roblox (HTTP polling) la récupère
           if (!robloxClient.pendingCommands) robloxClient.pendingCommands = [];
           robloxClient.pendingCommands.push(data);
-          console.log(`[BRIDGE] Commande stockée pour Roblox (${targetClientId}) :`, data.action);
+          console.log(`[BRIDGE] Commande stockée pour Roblox (${String(targetClientId)}) :`, data.action);
         } else {
           console.warn(`[BRIDGE] Client Roblox cible introuvable : ${targetClientId}`);
         }
