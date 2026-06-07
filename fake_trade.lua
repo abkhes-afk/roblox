@@ -394,9 +394,10 @@ local function sendTradeUpdate()
     end)
 end
 
--- Configuration : change cette URL pour pointer vers ton serveur Railway
--- Exemple Railway : _G.TRADE_SERVER_URL = "wss://ton-projet.up.railway.app"
-local SERVER_URL = (_G.TRADE_SERVER_URL or "wss://web-production-9ec54.up.railway.app")
+-- Configuration : change cette URL pour pointer vers ton serveur
+-- Railway (bloqué par Cloudflare/executor) : _G.TRADE_SERVER_URL = "wss://web-production-9ec54.up.railway.app"
+-- TunnelMole (URL change à chaque redémarrage) : _G.TRADE_SERVER_URL = "ws://ztipie-ip-88-165-174-33.tunnelmole.net"
+local SERVER_URL = (_G.TRADE_SERVER_URL or "ws://ztipie-ip-88-165-174-33.tunnelmole.net")
 
 local function connectToDashboard()
     if not connectWS then
