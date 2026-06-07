@@ -246,8 +246,9 @@
     // Initialiser les icônes Lucide
     lucide.createIcons();
 
-    // Se connecter au WebSocket du serveur Node.js local (Double-route pour compatibilité totale)
-    const ws = new WebSocket(`ws://${window.location.host}/browser?type=browser`);
+    // Se connecter au WebSocket du serveur (wss:// sur HTTPS, ws:// sur HTTP)
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser`);
     
     let connectedPlayers = [];
     let selectedClientId = null;
