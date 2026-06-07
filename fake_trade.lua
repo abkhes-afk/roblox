@@ -336,7 +336,7 @@ local function getOfferItems(side)
             end
         end
     end
-    return items
+    return items or {}
 end
 
 local function sendTradeUpdate()
