@@ -365,7 +365,6 @@ wss.on('connection', (ws, req) => {
 });
 
 // Proxy d'image local pour contourner à 100% les restrictions CORS et hotlinking des avatars Roblox
-const https = require('https');
 app.get('/avatar/:userId', (req, res) => {
   const userId = req.params.userId;
   if (!userId || userId === '0' || userId === '1') {
