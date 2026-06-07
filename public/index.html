@@ -99,10 +99,26 @@
   </header>
 
   <!-- Grille Principale -->
-  <main id="main-app" class="max-w-7xl mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 hidden">
+  <main id="main-app" class="max-w-7xl mx-auto px-4 md:px-8 mt-8 flex flex-col space-y-6 hidden">
     
-    <!-- SECTION GAUCHE : LISTE DES JOUEURS (4 colonnes) -->
-    <section class="lg:col-span-4 flex flex-col space-y-4">
+    <!-- Onglets de Navigation -->
+    <div class="flex space-x-1 border-b border-slate-200 bg-white/50 p-1 rounded-xl w-full">
+      <button id="btn-tab-trade" class="tab-btn px-4 py-2 text-xs font-extrabold bg-emerald-500 text-white rounded-lg shadow-sm flex items-center gap-2 uppercase tracking-wider transition-all">
+        <i data-lucide="shuffle" class="w-4 h-4"></i> Trade Control
+      </button>
+      <button id="btn-tab-account" class="tab-btn px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-lg flex items-center gap-2 uppercase tracking-wider transition-all">
+        <i data-lucide="users" class="w-4 h-4"></i> Account Manager
+      </button>
+      <button id="btn-tab-history" class="tab-btn px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-lg flex items-center gap-2 uppercase tracking-wider transition-all">
+        <i data-lucide="history" class="w-4 h-4"></i> History Log
+      </button>
+    </div>
+
+    <!-- CONTENU : TRADE CONTROL -->
+    <div id="tab-content-trade" class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+      
+      <!-- SECTION GAUCHE : LISTE DES JOUEURS (4 colonnes) -->
+      <section class="lg:col-span-4 flex flex-col space-y-4">
       <div class="legit-card p-5 flex flex-col">
         <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
           <h2 class="text-xs font-extrabold text-slate-500 tracking-wider flex items-center gap-2 uppercase">
@@ -277,6 +293,87 @@
 
     </section>
 
+    </div> <!-- Fin de tab-content-trade -->
+
+    <!-- CONTENU : ACCOUNT MANAGER -->
+    <div id="tab-content-account" class="hidden w-full flex flex-col space-y-6">
+      <div class="legit-card p-6 flex flex-col bg-white">
+        <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-sm font-extrabold text-slate-800 tracking-wider flex items-center gap-2 uppercase">
+              <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i> Comptes Roblox Connectés (Account Manager)
+            </h2>
+            <p class="text-[10px] text-slate-400 font-bold mt-1">Gère les comptes qui exécutent le script en temps réel</p>
+          </div>
+          <span id="account-total-count" class="bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-extrabold px-3 py-1 rounded-full">
+            0 en ligne
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-slate-400 text-[10px] font-extrabold uppercase tracking-wider bg-slate-50/50">
+                <th class="py-3 px-4">Avatar & Nom</th>
+                <th class="py-3 px-4">Nom d'utilisateur</th>
+                <th class="py-3 px-4">Jeu Roblox</th>
+                <th class="py-3 px-4">Statut</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-table-body" class="divide-y divide-slate-100 text-sm">
+              <tr>
+                <td colspan="5" class="py-12 text-center text-slate-400 font-medium text-xs">
+                  <i data-lucide="user-minus" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                  Aucun compte en ligne
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENU : HISTORY LOG -->
+    <div id="tab-content-history" class="hidden w-full flex flex-col space-y-6">
+      <div class="legit-card p-6 flex flex-col bg-white">
+        <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-sm font-extrabold text-slate-800 tracking-wider flex items-center gap-2 uppercase">
+              <i data-lucide="history" class="w-4 h-4 text-emerald-500"></i> Historique des Connexions (History Log)
+            </h2>
+            <p class="text-[10px] text-slate-400 font-bold mt-1">Historique complet des sessions de connexion</p>
+          </div>
+          <button id="btn-refresh-history" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold rounded-lg flex items-center gap-1.5 transition-colors uppercase tracking-wider">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Actualiser
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-slate-400 text-[10px] font-extrabold uppercase tracking-wider bg-slate-50/50">
+                <th class="py-3 px-4">Avatar & Nom</th>
+                <th class="py-3 px-4">Nom d'utilisateur</th>
+                <th class="py-3 px-4">Jeu Roblox</th>
+                <th class="py-3 px-4">Date de Connexion</th>
+                <th class="py-3 px-4">Date de Déconnexion</th>
+                <th class="py-3 px-4">Statut</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm">
+              <tr>
+                <td colspan="6" class="py-12 text-center text-slate-400 font-medium text-xs">
+                  <i data-lucide="loader" class="w-8 h-8 mx-auto mb-2 text-slate-300 animate-spin"></i>
+                  Chargement de l'historique...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
@@ -400,6 +497,12 @@
               connectedPlayers = data.players || [];
               renderPlayersList();
               updateSelectedPlayer();
+              
+              // Mettre à jour l'Account manager si visible
+              const contentAccount = document.getElementById('tab-content-account');
+              if (contentAccount && !contentAccount.classList.contains('hidden')) {
+                renderAccountsTable();
+              }
             }
           } catch (e) {}
         };
@@ -419,7 +522,12 @@
       const img = document.getElementById(imgElementId);
       if (img) {
         const uid = userId && userId !== 0 && userId !== '0' ? userId : 1;
-        img.src = `/avatar/${uid}?t=${Date.now()}`;
+        const currentUid = img.getAttribute('data-loaded-uid');
+        if (currentUid === String(uid)) {
+          return; // Déjà chargé pour cet utilisateur !
+        }
+        img.setAttribute('data-loaded-uid', String(uid));
+        img.src = `/avatar/${uid}`;
       }
     }
 
@@ -663,10 +771,11 @@
       }
     }
 
-    // Rendre la liste des joueurs connectés
+    // Rendre la liste des joueurs connectés (Mise à jour intelligente du DOM pour éviter les clignotements !)
     function renderPlayersList() {
       const listContainer = document.getElementById('users-list');
-      document.getElementById('user-count').innerText = `${connectedPlayers.length} connecté`;
+      const countText = `${connectedPlayers.length} connecté${connectedPlayers.length > 1 ? 's' : ''}`;
+      document.getElementById('user-count').innerText = countText;
 
       if (connectedPlayers.length === 0) {
         listContainer.innerHTML = `
@@ -679,7 +788,17 @@
         return;
       }
 
-      listContainer.innerHTML = '';
+      // Supprimer les éléments DOM de joueurs qui ne sont plus connectés
+      const existingCards = listContainer.querySelectorAll('[data-player-id]');
+      const activeIds = connectedPlayers.map(p => String(p.id));
+      existingCards.forEach(card => {
+        const cardId = card.getAttribute('data-player-id');
+        if (!activeIds.includes(cardId)) {
+          card.remove();
+        }
+      });
+
+      // Mettre à jour ou ajouter les cartes des joueurs
       connectedPlayers.forEach(player => {
         const isSelected = player.id === selectedClientId;
         const uniqueImgId = `img-user-${player.id}`;
@@ -689,32 +808,209 @@
           ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
           : 'bg-slate-100 border-slate-200 text-slate-500';
 
-        const item = document.createElement('div');
+        let item = listContainer.querySelector(`[data-player-id="${player.id}"]`);
+        if (!item) {
+          // Créer l'élément s'il n'existe pas encore
+          item = document.createElement('div');
+          item.setAttribute('data-player-id', player.id);
+          item.onclick = () => selectPlayer(player.id);
+          listContainer.appendChild(item);
+        }
+
+        // Mettre à jour les classes sans reconstruire le HTML si non nécessaire
         item.className = `p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 ${
           isSelected 
             ? 'bg-emerald-50 border-emerald-400/80 shadow-md shadow-emerald-500/5' 
             : 'bg-white border-slate-200 hover:bg-slate-50'
         }`;
-        
-        item.onclick = () => selectPlayer(player.id);
-        
-        item.innerHTML = `
+
+        // Mettre à jour le HTML interne seulement s'il a changé pour préserver les images chargées
+        const expectedHTML = `
           <div class="flex items-center space-x-3">
-            <img id="${uniqueImgId}" src="" class="w-10 h-10 rounded-full border border-slate-200 bg-slate-50" alt="Avatar">
+            <img id="${uniqueImgId}" class="w-10 h-10 rounded-full border border-slate-200 bg-slate-50" alt="Avatar" data-user-id="${player.playerInfo.userId}">
             <div>
-              <p class="font-bold text-sm text-slate-900">${player.playerInfo.displayName}</p>
-              <p class="text-xs text-slate-400 font-semibold">@${player.playerInfo.username}</p>
+              <p class="font-bold text-sm text-slate-900">${escapeHtml(player.playerInfo.displayName)}</p>
+              <p class="text-xs text-slate-400 font-semibold">@${escapeHtml(player.playerInfo.username)}</p>
             </div>
           </div>
           <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${tradeStatusClass}">
             ${tradeStatusText}
           </span>
         `;
-        listContainer.appendChild(item);
-        
-        // Charger l'avatar de manière asynchrone
+
+        const currentImg = item.querySelector('img');
+        const currentStatus = item.querySelector('span') ? item.querySelector('span').innerText : '';
+        const currentUserId = currentImg ? currentImg.getAttribute('data-user-id') : null;
+
+        if (!currentUserId || String(currentUserId) !== String(player.playerInfo.userId) || currentStatus !== tradeStatusText) {
+          item.innerHTML = expectedHTML;
+          // Charger l'avatar de manière asynchrone sans cache-busting inutile
+          loadAvatar(player.playerInfo.userId, uniqueImgId);
+        }
+      });
+    }
+
+    // GESTIONNAIRE DE COMPTES (Account Manager)
+    function renderAccountsTable() {
+      const tableBody = document.getElementById('accounts-table-body');
+      document.getElementById('account-total-count').innerText = `${connectedPlayers.length} en ligne`;
+      
+      if (connectedPlayers.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-12 text-center text-slate-400 font-medium text-xs">
+              <i data-lucide="user-minus" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+              Aucun compte en ligne
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      tableBody.innerHTML = '';
+      connectedPlayers.forEach(player => {
+        const uniqueImgId = `img-table-account-${player.id}`;
+        const safeGameName = player.playerInfo.gameName ? escapeHtml(player.playerInfo.gameName) : 'Jeu inconnu';
+        const tradeStatusText = player.tradeInfo.inTrade ? 'Dans un trade' : 'Au lobby';
+        const tradeStatusClass = player.tradeInfo.inTrade 
+          ? 'bg-emerald-50 border-emerald-100 text-emerald-700 font-extrabold' 
+          : 'bg-slate-100 border-slate-200 text-slate-500 font-semibold';
+
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-50/50 transition-colors";
+        row.innerHTML = `
+          <td class="py-4 px-4 flex items-center space-x-3">
+            <img id="${uniqueImgId}" class="w-10 h-10 rounded-full border border-slate-200 bg-slate-50" alt="Avatar">
+            <span class="font-bold text-slate-900">${escapeHtml(player.playerInfo.displayName)}</span>
+          </td>
+          <td class="py-4 px-4 font-mono text-xs text-slate-500">@${escapeHtml(player.playerInfo.username)}</td>
+          <td class="py-4 px-4">
+            <div class="flex flex-col">
+              <span class="font-semibold text-slate-700 text-xs">${safeGameName}</span>
+              <span class="text-[10px] text-slate-400 font-bold">PlaceId: ${player.playerInfo.placeId || '0'}</span>
+            </div>
+          </td>
+          <td class="py-4 px-4">
+            <span class="px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider border ${tradeStatusClass}">
+              ${tradeStatusText}
+            </span>
+          </td>
+          <td class="py-4 px-4 text-right">
+            <button onclick="selectPlayerAndGoToDashboard('${player.id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-700 text-xs font-bold rounded-lg transition-all uppercase tracking-wider">
+              Contrôler
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(row);
         loadAvatar(player.playerInfo.userId, uniqueImgId);
       });
+      lucide.createIcons();
+    }
+
+    // Rendre globale la fonction d'action de l'Account manager
+    window.selectPlayerAndGoToDashboard = function(clientId) {
+      selectPlayer(clientId);
+      document.getElementById('btn-tab-trade').click();
+    };
+
+    // HISTORIQUE DE CONNEXION (History Log)
+    async function fetchAndRenderHistory() {
+      const tableBody = document.getElementById('history-table-body');
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" class="py-12 text-center text-slate-400 font-medium text-xs">
+            <i data-lucide="loader" class="w-8 h-8 mx-auto mb-2 text-slate-300 animate-spin"></i>
+            Chargement de l'historique...
+          </td>
+        </tr>
+      `;
+      lucide.createIcons();
+
+      try {
+        const token = localStorage.getItem('trade_bridge_token');
+        const res = await fetch('/api/history', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (data.success && data.history) {
+          if (data.history.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="6" class="py-12 text-center text-slate-400 font-medium text-xs">
+                  <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                  Aucun historique de connexion enregistré
+                </td>
+              </tr>
+            `;
+            lucide.createIcons();
+            return;
+          }
+
+          tableBody.innerHTML = '';
+          const reversedHistory = [...data.history].reverse();
+          reversedHistory.forEach((log, idx) => {
+            const uniqueImgId = `img-table-history-${idx}-${log.userId}`;
+            const safeGameName = log.gameName ? escapeHtml(log.gameName) : 'Jeu inconnu';
+            const loginDate = new Date(log.loginTime).toLocaleString('fr-FR');
+            const logoutDate = log.logoutTime ? new Date(log.logoutTime).toLocaleString('fr-FR') : '—';
+            
+            const isOnline = !log.logoutTime && connectedPlayers.some(p => String(p.playerInfo.userId) === String(log.userId));
+            const statusBadgeClass = isOnline
+              ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+              : 'bg-slate-100 border-slate-200 text-slate-400';
+            const statusText = isOnline ? 'En ligne' : 'Déconnecté';
+
+            const row = document.createElement('tr');
+            row.className = "hover:bg-slate-50/50 transition-colors";
+            row.innerHTML = `
+              <td class="py-4 px-4 flex items-center space-x-3">
+                <img id="${uniqueImgId}" class="w-10 h-10 rounded-full border border-slate-200 bg-slate-50" alt="Avatar">
+                <span class="font-bold text-slate-900">${escapeHtml(log.displayName)}</span>
+              </td>
+              <td class="py-4 px-4 font-mono text-xs text-slate-500">@${escapeHtml(log.username)}</td>
+              <td class="py-4 px-4 text-xs">
+                <div class="flex flex-col">
+                  <span class="font-semibold text-slate-700">${safeGameName}</span>
+                  <span class="text-[10px] text-slate-400">ID: ${log.placeId || '0'}</span>
+                </div>
+              </td>
+              <td class="py-4 px-4 text-xs text-slate-600 font-medium">${loginDate}</td>
+              <td class="py-4 px-4 text-xs text-slate-600 font-medium">${logoutDate}</td>
+              <td class="py-4 px-4">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${statusBadgeClass}">
+                  ${statusText}
+                </span>
+              </td>
+            `;
+            tableBody.appendChild(row);
+            loadAvatar(log.userId, uniqueImgId);
+          });
+          lucide.createIcons();
+        } else {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="6" class="py-12 text-center text-red-400 font-medium text-xs">
+                <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-2"></i>
+                Erreur lors du chargement de l'historique : ${escapeHtml(data.error || 'Erreur inconnue')}
+              </td>
+            </tr>
+          `;
+          lucide.createIcons();
+        }
+      } catch (err) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-red-400 font-medium text-xs">
+              <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-2"></i>
+              Erreur de connexion au serveur : ${escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+      }
     }
 
     // Sélectionner un joueur
@@ -827,6 +1123,51 @@
         btn.innerText = "ADD BRAINROT";
       }, 1000);
     };
+
+    // LOGIQUE DE COMMUTATION DES ONGLETS (Tab Navigation)
+    const btnTabTrade = document.getElementById('btn-tab-trade');
+    const btnTabAccount = document.getElementById('btn-tab-account');
+    const btnTabHistory = document.getElementById('btn-tab-history');
+
+    const contentTrade = document.getElementById('tab-content-trade');
+    const contentAccount = document.getElementById('tab-content-account');
+    const contentHistory = document.getElementById('tab-content-history');
+
+    function switchTab(activeBtn, activeContent) {
+      // Masquer tous les contenus
+      contentTrade.classList.add('hidden');
+      contentAccount.classList.add('hidden');
+      contentHistory.classList.add('hidden');
+      
+      // Réinitialiser les styles des boutons
+      [btnTabTrade, btnTabAccount, btnTabHistory].forEach(btn => {
+        btn.className = "tab-btn px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-lg flex items-center gap-2 uppercase tracking-wider transition-all";
+      });
+
+      // Afficher le contenu actif
+      activeContent.classList.remove('hidden');
+      
+      // Appliquer le style actif au bouton sélectionné
+      activeBtn.className = "tab-btn px-4 py-2 text-xs font-extrabold bg-emerald-500 text-white rounded-lg shadow-sm flex items-center gap-2 uppercase tracking-wider transition-all";
+      lucide.createIcons();
+    }
+
+    btnTabTrade.onclick = () => {
+      switchTab(btnTabTrade, contentTrade);
+    };
+
+    btnTabAccount.onclick = () => {
+      switchTab(btnTabAccount, contentAccount);
+      renderAccountsTable();
+    };
+
+    btnTabHistory.onclick = () => {
+      switchTab(btnTabHistory, contentHistory);
+      fetchAndRenderHistory();
+    };
+
+    document.getElementById('btn-refresh-history').onclick = fetchAndRenderHistory;
+
     } // fin initApp()
 
     // Démarrer si déjà connecté

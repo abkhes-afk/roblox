@@ -127,6 +127,28 @@ app.post('/api/register', (req, res) => {
     if (!data || !data.userId) return res.json({ success: false, error: 'missing userId' });
 
     const uid = String(data.userId);
+    const now = Date.now();
+
+    // Mettre à jour l'ancien historique non déconnecté pour ce même utilisateur
+    const prevHistory = connectionHistory.find(h => String(h.userId) === uid && !h.logoutTime);
+    if (prevHistory) {
+      prevHistory.logoutTime = now;
+    }
+
+    // Ajouter à l'historique
+    connectionHistory.push({
+      userId: data.userId,
+      username: String(data.username || 'Inconnu').replace(/[<>"']/g, ''),
+      displayName: String(data.displayName || 'Inconnu').replace(/[<>"']/g, ''),
+      placeId: data.placeId || '0',
+      gameName: String(data.gameName || 'Unknown Game').replace(/[<>"']/g, ''),
+      loginTime: now,
+      logoutTime: null
+    });
+    if (connectionHistory.length > 200) {
+      connectionHistory.shift(); // Limiter à 200 entrées d'historique
+    }
+
     robloxClients.set(uid, {
       ws: null,
       playerInfo: {
@@ -214,6 +236,15 @@ app.post('/api/heartbeat', (req, res) => {
   }
 });
 
+// Endpoint historique de connexion (sécurisé)
+app.get('/api/history', verifyToken, (req, res) => {
+  try {
+    res.json({ success: true, history: connectionHistory });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/command', (req, res) => {
   try {
     const data = req.body;
@@ -232,9 +263,10 @@ app.post('/api/command', (req, res) => {
   }
 });
 
-// Stocker les connexions actives
+// Stocker les connexions actives et l'historique
 const robloxClients = new Map(); // clientId -> { ws, playerInfo, tradeInfo }
 const browserClients = new Set(); // set of ws browser connections
+const connectionHistory = []; // list of { userId, username, displayName, placeId, gameName, loginTime, logoutTime }
 
 // Heartbeat cleanup : envoyer des pings et supprimer les clients morts
 setInterval(() => {
@@ -243,6 +275,13 @@ setInterval(() => {
   for (const [uid, client] of robloxClients) {
     if (!client.lastHeartbeat || (now - client.lastHeartbeat) > timeout) {
       console.log(`[HEARTBEAT] Client ${uid} expiré, suppression`);
+      
+      // Marquer la déconnexion dans l'historique
+      const hist = connectionHistory.find(h => String(h.userId) === String(uid) && !h.logoutTime);
+      if (hist) {
+        hist.logoutTime = now;
+      }
+      
       robloxClients.delete(uid);
     } else {
       // Envoyer un ping pour forcer le client à répondre
