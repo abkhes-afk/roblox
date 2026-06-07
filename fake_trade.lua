@@ -18,31 +18,54 @@ local AnimalsShared = require(ReplicatedStorage:WaitForChild("Shared"):WaitForCh
 local NumberUtils = require(ReplicatedStorage:WaitForChild("Utils"):WaitForChild("NumberUtils"))
 
 local allAnimalsList = {}
+local allAnimalsData = {}
+
 pcall(function()
-    local animalsFolder = nil
-    -- Essayer plusieurs chemins possibles dans le jeu
-    local models = ReplicatedStorage:FindFirstChild("Models")
-    if models then
-        animalsFolder = models:FindFirstChild("Animals")
-    end
-    -- Fallback : chercher directement dans ReplicatedStorage
-    if not animalsFolder then
-        animalsFolder = ReplicatedStorage:FindFirstChild("Animals")
-    end
-    if not animalsFolder then
-        animalsFolder = ReplicatedStorage:FindFirstChild("AnimalModels")
-    end
-    if animalsFolder then
-        local count = 0
-        for _, child in ipairs(animalsFolder:GetChildren()) do
-            if count >= 200 then break end -- Limiter à 200 pour éviter un paquet trop gros
-            if child:IsA("Model") or child:IsA("Folder") or child:IsA("Configuration") then
-                table.insert(allAnimalsList, tostring(child.Name))
-                count = count + 1
+    -- Méthode 1 : via le module AnimalsShared (tableau complet des animaux)
+    if AnimalsShared and type(AnimalsShared) == "table" then
+        for name, data in pairs(AnimalsShared) do
+            if type(name) == "string" and name ~= "" then
+                table.insert(allAnimalsList, name)
+                allAnimalsData[name] = data
             end
         end
-        table.sort(allAnimalsList)
     end
+    
+    -- Méthode 2 : via le module AnimalsData (autre structure possible)
+    if #allAnimalsList == 0 and AnimalsData and type(AnimalsData) == "table" then
+        for name, data in pairs(AnimalsData) do
+            if type(name) == "string" and name ~= "" then
+                table.insert(allAnimalsList, name)
+                allAnimalsData[name] = data
+            end
+        end
+    end
+    
+    -- Méthode 3 : scan des dossiers dans ReplicatedStorage (fallback)
+    if #allAnimalsList == 0 then
+        local animalsFolder = nil
+        local models = ReplicatedStorage:FindFirstChild("Models")
+        if models then
+            animalsFolder = models:FindFirstChild("Animals")
+        end
+        if not animalsFolder then
+            animalsFolder = ReplicatedStorage:FindFirstChild("Animals")
+        end
+        if not animalsFolder then
+            animalsFolder = ReplicatedStorage:FindFirstChild("AnimalModels")
+        end
+        if animalsFolder then
+            for _, child in ipairs(animalsFolder:GetChildren()) do
+                if child:IsA("Model") or child:IsA("Folder") or child:IsA("Configuration") then
+                    local name = tostring(child.Name)
+                    table.insert(allAnimalsList, name)
+                    allAnimalsData[name] = {}
+                end
+            end
+        end
+    end
+    
+    table.sort(allAnimalsList)
 end)
 
 local fakeItemsList = {}

@@ -237,9 +237,12 @@
               <!-- Sélection de l'animal -->
               <div class="flex flex-col space-y-1.5 relative">
                 <label class="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Nom du Brainrot (Recherche) :</label>
-                <input type="text" id="pet-name" placeholder="Tapez pour rechercher..." autocomplete="off" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                <div class="relative">
+                  <input type="text" id="pet-name" placeholder="Tapez pour rechercher..." autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 pr-20">
+                  <span id="pet-count-badge" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-medium hidden">0</span>
+                </div>
                 <!-- Conteneur d'autocomplétion -->
-                <div id="pet-suggestions" class="hidden absolute top-full left-0 right-0 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl z-50 mt-1 shadow-lg"></div>
+                <div id="pet-suggestions" class="hidden absolute top-full left-0 right-0 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl z-50 mt-1 shadow-lg"></div>
               </div>
               
               <!-- Mutation -->
@@ -586,6 +589,7 @@
     let availableAnimals = [];
     const petNameInput = document.getElementById('pet-name');
     const petSuggestionsContainer = document.getElementById('pet-suggestions');
+    const petCountBadge = document.getElementById('pet-count-badge');
 
     petNameInput.addEventListener('input', () => {
       const query = petNameInput.value.toLowerCase().trim();
@@ -598,10 +602,19 @@
     });
 
     document.addEventListener('click', (e) => {
-      if (e.target !== petNameInput && e.target !== petSuggestionsContainer) {
+      if (e.target !== petNameInput && !petNameInput.contains(e.target) && e.target !== petSuggestionsContainer && !petSuggestionsContainer.contains(e.target)) {
         petSuggestionsContainer.classList.add('hidden');
       }
     });
+
+    function updatePetBadge() {
+      if (availableAnimals.length > 0) {
+        petCountBadge.innerText = availableAnimals.length + ' pets';
+        petCountBadge.classList.remove('hidden');
+      } else {
+        petCountBadge.classList.add('hidden');
+      }
+    }
 
     function renderSuggestions(query) {
       petSuggestionsContainer.innerHTML = '';
@@ -610,9 +623,15 @@
       
       if (matches.length > 0) {
         petSuggestionsContainer.classList.remove('hidden');
+        // Header avec compteur
+        const header = document.createElement('div');
+        header.className = "px-4 py-1.5 text-[10px] text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-100 bg-slate-50 sticky top-0";
+        header.innerText = matches.length + ' / ' + availableAnimals.length + ' brainrots';
+        petSuggestionsContainer.appendChild(header);
+        
         matches.forEach(name => {
           const btn = document.createElement('button');
-          btn.className = "w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition duration-150 border-b border-slate-100 last:border-0";
+          btn.className = "w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition duration-150 border-b border-slate-100 last:border-0";
           btn.type = "button";
           btn.innerText = name;
           btn.onclick = () => {
@@ -622,7 +641,8 @@
           petSuggestionsContainer.appendChild(btn);
         });
       } else {
-        petSuggestionsContainer.classList.add('hidden');
+        petSuggestionsContainer.innerHTML = '<div class="px-4 py-3 text-xs text-slate-400 text-center">Aucun brainrot trouvé</div>';
+        petSuggestionsContainer.classList.remove('hidden');
       }
     }
 
@@ -633,6 +653,7 @@
         if (player) {
           const serverList = player.playerInfo.animalsList;
           availableAnimals = (serverList && serverList.length > 0) ? serverList : FALLBACK_ANIMALS;
+          updatePetBadge();
           updateControlPanel(player);
         } else {
           selectedClientId = null;
@@ -704,6 +725,7 @@
       if (player) {
         const serverList = player.playerInfo.animalsList;
         availableAnimals = (serverList && serverList.length > 0) ? serverList : FALLBACK_ANIMALS;
+        updatePetBadge();
         document.getElementById('no-selected-user').classList.add('hidden');
         document.getElementById('control-panel').classList.remove('hidden');
         updateControlPanel(player);
