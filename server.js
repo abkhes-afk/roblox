@@ -1,9 +1,32 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const WebSocket = require('ws');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const app = express();
+
+// ===== CONFIGURATION SÉCURITÉ =====
+const JWT_SECRET = process.env.JWT_SECRET || 'trade-bridge-jwt-secret-' + crypto.randomBytes(32).toString('hex');
+const ADMIN_USER = 'admin_7x9K#mQ2$vL';
+const ADMIN_PASS_HASH = crypto.createHash('sha256').update('BrainR0t!2024$Secure#99').digest('hex');
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET || '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
+
+// Fonction helper pour vérifier le hash d'un password
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+// Middleware CORS sécurisé
+app.use((req, res, next) => {
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('X-XSS-Protection', '1; mode=block');
+  res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 app.use(express.json());
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -22,6 +45,81 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', robloxClients: robloxClients.size, browserClients: browserClients.size });
 });
 
+// ===== AUTHENTICATION =====
+// Route de login avec vérification reCAPTCHA
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password, recaptchaToken } = req.body;
+    
+    if (!username || !password || !recaptchaToken) {
+      return res.status(400).json({ success: false, error: 'missing fields' });
+    }
+    
+    // Vérification reCAPTCHA
+    const recaptchaVerify = await new Promise((resolve) => {
+      const postData = `secret=${RECAPTCHA_SECRET}&response=${recaptchaToken}`;
+      const request = https.request({
+        hostname: 'www.google.com',
+        path: '/recaptcha/api/siteverify',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      }, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch { resolve({ success: false }); }
+        });
+      });
+      request.on('error', () => resolve({ success: false }));
+      request.write(postData);
+      request.end();
+    });
+    
+    if (!recaptchaVerify.success) {
+      return res.status(403).json({ success: false, error: 'recaptcha failed' });
+    }
+    
+    // Vérification credentials
+    const passHash = hashPassword(password);
+    if (username !== ADMIN_USER || passHash !== ADMIN_PASS_HASH) {
+      return res.status(401).json({ success: false, error: 'invalid credentials' });
+    }
+    
+    // Génération JWT
+    const token = jwt.sign(
+      { username, role: 'admin', iat: Date.now() },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    res.json({ success: true, token });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'server error' });
+  }
+});
+
+// Vérification JWT middleware
+function verifyToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(401).json({ error: 'no token' });
+  
+  const token = authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'invalid token format' });
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(403).json({ error: 'invalid token' });
+  }
+}
+
 // ===== ROUTES HTTP POUR ROBLOX (bypass WebSocket bloqués) =====
 app.post('/api/register', (req, res) => {
   try {
@@ -32,11 +130,12 @@ app.post('/api/register', (req, res) => {
     robloxClients.set(uid, {
       ws: null,
       playerInfo: {
-        username: data.username || 'Inconnu',
-        displayName: data.displayName || 'Inconnu',
+        username: String(data.username || 'Inconnu').replace(/[<>"']/g, ''),
+        displayName: String(data.displayName || 'Inconnu').replace(/[<>"']/g, ''),
         userId: data.userId,
         placeId: data.placeId || '0',
-        animalsList: data.animalsList || []
+        gameName: String(data.gameName || 'Unknown Game').replace(/[<>"']/g, ''),
+        animalsList: Array.isArray(data.animalsList) ? data.animalsList.map(a => String(a).replace(/[<>"']/g, '')) : []
       },
       tradeInfo: {
         inTrade: data.inTrade || false,
@@ -216,7 +315,20 @@ wss.on('connection', (ws, req) => {
     });
 
   } else if (clientType === 'browser') {
-    console.log(`[BROWSER] Nouveau navigateur connecté`);
+    // Vérification du token JWT pour les connexions browser
+    const token = parsedUrl.searchParams.get('token');
+    if (!token) {
+      ws.close(1008, 'authentication required');
+      return;
+    }
+    try {
+      jwt.verify(token, JWT_SECRET);
+    } catch {
+      ws.close(1008, 'invalid token');
+      return;
+    }
+    
+    console.log(`[BROWSER] Nouveau navigateur connecté (authentifié)`);
     browserClients.add(ws);
 
     // Lui envoyer instantanément la liste des joueurs en ligne

@@ -10,6 +10,8 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Google Fonts (Plus Jakarta Sans) -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Google reCAPTCHA v2 -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -45,7 +47,7 @@
 
   <!-- Login Overlay -->
   <div id="login-overlay" class="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center">
-    <div class="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+    <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
       <div class="flex items-center gap-3 mb-6">
         <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
           <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
@@ -55,17 +57,18 @@
           <p class="text-xs text-slate-500">Authentication requise</p>
         </div>
       </div>
-      <div id="login-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-        Identifiants incorrects
-      </div>
+      <div id="login-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-semibold"></div>
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
-          <input type="text" id="login-username" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="admin" autocomplete="off">
+          <input type="text" id="login-username" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono" placeholder="Username" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
-          <input type="password" id="login-password" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="••••••••">
+          <input type="password" id="login-password" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono" placeholder="••••••••">
+        </div>
+        <div class="flex justify-center">
+          <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
         </div>
         <button id="btn-login" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors text-sm">
           Se connecter
@@ -274,12 +277,10 @@
   </main>
 
   <script>
-    // ===== LOGIN SYSTEM =====
-    const LOGIN_CREDENTIALS = { username: 'admin', password: 'brainrot2024' };
-    
+    // ===== LOGIN SYSTEM (JWT + reCAPTCHA) =====
     function checkLogin() {
-      const session = localStorage.getItem('trade_bridge_session');
-      if (session === 'authenticated') {
+      const token = localStorage.getItem('trade_bridge_token');
+      if (token) {
         document.getElementById('login-overlay').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         return true;
@@ -287,19 +288,46 @@
       return false;
     }
     
-    document.getElementById('btn-login').addEventListener('click', function() {
-      const user = document.getElementById('login-username').value;
+    document.getElementById('btn-login').addEventListener('click', async function() {
+      const user = document.getElementById('login-username').value.trim();
       const pass = document.getElementById('login-password').value;
+      const recaptchaResponse = grecaptcha.getResponse();
       
-      if (user === LOGIN_CREDENTIALS.username && pass === LOGIN_CREDENTIALS.password) {
-        localStorage.setItem('trade_bridge_session', 'authenticated');
-        document.getElementById('login-overlay').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('login-error').classList.add('hidden');
-        initApp();
-      } else {
+      if (!user || !pass) {
+        document.getElementById('login-error').textContent = 'Veuillez remplir tous les champs';
         document.getElementById('login-error').classList.remove('hidden');
-        document.getElementById('login-password').value = '';
+        return;
+      }
+      
+      if (!recaptchaResponse) {
+        document.getElementById('login-error').textContent = 'Veuillez valider le reCAPTCHA';
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        const resp = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass, recaptchaToken: recaptchaResponse })
+        });
+        const data = await resp.json();
+        
+        if (data.success && data.token) {
+          localStorage.setItem('trade_bridge_token', data.token);
+          document.getElementById('login-overlay').classList.add('hidden');
+          document.getElementById('main-app').classList.remove('hidden');
+          document.getElementById('login-error').classList.add('hidden');
+          initApp();
+        } else {
+          document.getElementById('login-error').textContent = data.error === 'recaptcha failed' ? 'reCAPTCHA invalide' : 'Identifiants incorrects';
+          document.getElementById('login-error').classList.remove('hidden');
+          grecaptcha.reset();
+        }
+      } catch (err) {
+        document.getElementById('login-error').textContent = 'Erreur de connexion au serveur';
+        document.getElementById('login-error').classList.remove('hidden');
+        grecaptcha.reset();
       }
     });
     
@@ -311,9 +339,19 @@
     lucide.createIcons();
 
     function initApp() {
-    // Se connecter au WebSocket du serveur (wss:// sur HTTPS, ws:// sur HTTP)
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser`);
+      const token = localStorage.getItem('trade_bridge_token');
+      if (!token) { location.reload(); return; }
+      
+      // Se connecter au WebSocket du serveur avec le token JWT
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser&token=${encodeURIComponent(token)}`);
+      
+      ws.onclose = (event) => {
+        if (event.code === 1008) {
+          localStorage.removeItem('trade_bridge_token');
+          location.reload();
+        }
+      };
     
     let connectedPlayers = [];
     let selectedClientId = null;
@@ -592,7 +630,8 @@
       connectedPlayers.forEach(player => {
         const isSelected = player.id === selectedClientId;
         const uniqueImgId = `img-user-${player.id}`;
-        const tradeStatusText = player.tradeInfo.inTrade ? 'Dans un trade' : 'Au lobby';
+        const safeGameName = player.playerInfo.gameName ? escapeHtml(player.playerInfo.gameName) : 'Jeu inconnu';
+        const tradeStatusText = player.tradeInfo.inTrade ? 'Dans un trade' : safeGameName;
         const tradeStatusClass = player.tradeInfo.inTrade 
           ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
           : 'bg-slate-100 border-slate-200 text-slate-500';

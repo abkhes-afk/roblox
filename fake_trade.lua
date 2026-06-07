@@ -313,6 +313,7 @@ end
 local HttpService = game:GetService("HttpService")
 
 local request = syn and syn.request or request or http_request or http and http.request or fluxus and fluxus.request
+local MarketplaceService = game:GetService("MarketplaceService")
 
 -- Configuration : change cette URL pour pointer vers ton serveur
 -- Railway : _G.TRADE_SERVER_URL = "https://web-production-3ee54.up.railway.app"
@@ -424,6 +425,11 @@ local function registerToServer()
         return false
     end
     
+    local gameName = "Unknown Game"
+    pcall(function()
+        gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+    end)
+    
     local success, result = pcall(function()
         return request({
             Url = SERVER_URL .. "/api/register",
@@ -434,6 +440,7 @@ local function registerToServer()
                 username = localPlayer.Name,
                 displayName = localPlayer.DisplayName,
                 placeId = tostring(game.PlaceId),
+                gameName = gameName,
                 animalsList = allAnimalsList,
                 inTrade = isTradeActive(),
                 otherPlayer = nil,
