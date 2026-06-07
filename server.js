@@ -116,16 +116,12 @@ const robloxClients = new Map(); // clientId -> { ws, playerInfo, tradeInfo }
 const browserClients = new Set(); // set of ws browser connections
 
 // Diffuser l'état général des joueurs connectés à tous les navigateurs ouverts
-// Seuls les joueurs dans le jeu Voler un Brainrot (109983668079237) sont affichés
-const TARGET_PLACE_ID = '109983668079237';
-
 function broadcastToBrowsers() {
   const playersList = Array.from(robloxClients.entries())
-    .filter(([id, client]) => client.playerInfo && client.playerInfo.placeId === TARGET_PLACE_ID)
     .map(([id, client]) => ({
       id,
-      playerInfo: client.playerInfo,
-      tradeInfo: client.tradeInfo,
+      playerInfo: client.playerInfo || { username: 'Inconnu', userId: id },
+      tradeInfo: client.tradeInfo || { inTrade: false },
       isOnline: true
     }));
 
