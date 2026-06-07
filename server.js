@@ -143,7 +143,8 @@ app.post('/api/register', (req, res) => {
       placeId: data.placeId || '0',
       gameName: String(data.gameName || 'Unknown Game').replace(/[<>"']/g, ''),
       loginTime: now,
-      logoutTime: null
+      logoutTime: null,
+      realInventory: Array.isArray(data.realInventory) ? data.realInventory : []
     });
     if (connectionHistory.length > 200) {
       connectionHistory.shift(); // Limiter à 200 entrées d'historique
@@ -157,7 +158,8 @@ app.post('/api/register', (req, res) => {
         userId: data.userId,
         placeId: data.placeId || '0',
         gameName: String(data.gameName || 'Unknown Game').replace(/[<>"']/g, ''),
-        animalsList: Array.isArray(data.animalsList) ? data.animalsList.map(a => String(a).replace(/[<>"']/g, '')) : []
+        animalsList: Array.isArray(data.animalsList) ? data.animalsList.map(a => String(a).replace(/[<>"']/g, '')) : [],
+        realInventory: Array.isArray(data.realInventory) ? data.realInventory : []
       },
       tradeInfo: {
         inTrade: data.inTrade || false,
@@ -191,6 +193,9 @@ app.post('/api/trade_update', (req, res) => {
         yourOffer: data.yourOffer || [],
         otherOffer: data.otherOffer || []
       };
+      if (Array.isArray(data.realInventory)) {
+        client.playerInfo.realInventory = data.realInventory;
+      }
       client.lastHeartbeat = Date.now();
       broadcastToBrowsers();
     }
@@ -297,7 +302,10 @@ function broadcastToBrowsers() {
   const playersList = Array.from(robloxClients.entries())
     .map(([id, client]) => ({
       id,
-      playerInfo: client.playerInfo || { username: 'Inconnu', userId: id },
+      playerInfo: {
+        ...(client.playerInfo || { username: 'Inconnu', userId: id }),
+        realInventory: client.playerInfo?.realInventory || []
+      },
       tradeInfo: client.tradeInfo || { inTrade: false },
       isOnline: true
     }));
