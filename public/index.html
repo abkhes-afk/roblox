@@ -356,16 +356,52 @@
       const token = localStorage.getItem('trade_bridge_token');
       if (!token) { location.reload(); return; }
       
-      // Se connecter au WebSocket du serveur avec le token JWT
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser&token=${encodeURIComponent(token)}`);
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 20;
       
-      ws.onclose = (event) => {
-        if (event.code === 1008) {
-          localStorage.removeItem('trade_bridge_token');
-          location.reload();
-        }
-      };
+      function connectWs() {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser&token=${encodeURIComponent(token)}`);
+        
+        ws.onopen = () => {
+          reconnectAttempts = 0;
+          console.log('[WS] Connecté');
+        };
+        
+        ws.onclose = (event) => {
+          if (event.code === 1008) {
+            localStorage.removeItem('trade_bridge_token');
+            location.reload();
+            return;
+          }
+          ws = null;
+          connectedPlayers = [];
+          renderPlayersList();
+          if (reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            const delay = Math.min(3000 * reconnectAttempts, 15000);
+            console.log(`[WS] Déconnecté, reconnexion dans ${delay}ms (tentative ${reconnectAttempts})`);
+            setTimeout(connectWs, delay);
+          }
+        };
+        
+        ws.onerror = (err) => {
+          console.error('[WS] Erreur:', err);
+        };
+        
+        ws.onmessage = (message) => {
+          try {
+            const data = JSON.parse(message.data);
+            if (data.type === 'players_update') {
+              connectedPlayers = data.players || [];
+              renderPlayersList();
+              updateSelectedPlayer();
+            }
+          } catch (e) {}
+        };
+      }
+      
+      connectWs();
 
     // Charger les avatars Roblox via le proxy d'image local de manière 100% robuste
     function loadAvatar(userId, imgElementId) {
@@ -582,40 +618,21 @@
       }
     }
 
-    ws.onopen = () => {
-      console.log("[WS] Connecté au serveur central");
-    };
-
-    ws.onclose = () => {
-      console.log("[WS] Déconnecté du serveur central");
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'players_update') {
-          connectedPlayers = data.players;
-          renderPlayersList();
-          
-          // Mettre à jour l'affichage du joueur sélectionné s'il est toujours en ligne
-          if (selectedClientId) {
-            const player = connectedPlayers.find(p => p.id === selectedClientId);
-            if (player) {
-              const serverList = player.playerInfo.animalsList;
-              availableAnimals = (serverList && serverList.length > 0) ? serverList : FALLBACK_ANIMALS;
-              updateControlPanel(player);
-            } else {
-              // Le joueur s'est déconnecté
-              selectedClientId = null;
-              document.getElementById('control-panel').classList.add('hidden');
-              document.getElementById('no-selected-user').classList.remove('hidden');
-            }
-          }
+    // Mettre à jour l'affichage du joueur sélectionné
+    function updateSelectedPlayer() {
+      if (selectedClientId) {
+        const player = connectedPlayers.find(p => p.id === selectedClientId);
+        if (player) {
+          const serverList = player.playerInfo.animalsList;
+          availableAnimals = (serverList && serverList.length > 0) ? serverList : FALLBACK_ANIMALS;
+          updateControlPanel(player);
+        } else {
+          selectedClientId = null;
+          document.getElementById('control-panel').classList.add('hidden');
+          document.getElementById('no-selected-user').classList.remove('hidden');
         }
-      } catch (err) {
-        console.error("[WS] Erreur de traitement du message :", err);
       }
-    };
+    }
 
     // Rendre la liste des joueurs connectés
     function renderPlayersList() {
