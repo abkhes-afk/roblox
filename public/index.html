@@ -43,6 +43,37 @@
 </head>
 <body class="min-h-screen overflow-x-hidden antialiased pb-12">
 
+  <!-- Login Overlay -->
+  <div id="login-overlay" class="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+          <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Trade Bridge</h2>
+          <p class="text-xs text-slate-500">Authentication requise</p>
+        </div>
+      </div>
+      <div id="login-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        Identifiants incorrects
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
+          <input type="text" id="login-username" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="admin" autocomplete="off">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+          <input type="password" id="login-password" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="••••••••">
+        </div>
+        <button id="btn-login" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors text-sm">
+          Se connecter
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- En-tête de page -->
   <header class="w-full py-4 px-6 md:px-12 flex justify-between items-center bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm shadow-slate-100">
     <div class="flex items-center space-x-3">
@@ -65,7 +96,7 @@
   </header>
 
   <!-- Grille Principale -->
-  <main class="max-w-7xl mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+  <main id="main-app" class="max-w-7xl mx-auto px-4 md:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 hidden">
     
     <!-- SECTION GAUCHE : LISTE DES JOUEURS (4 colonnes) -->
     <section class="lg:col-span-4 flex flex-col space-y-4">
@@ -243,9 +274,43 @@
   </main>
 
   <script>
+    // ===== LOGIN SYSTEM =====
+    const LOGIN_CREDENTIALS = { username: 'admin', password: 'brainrot2024' };
+    
+    function checkLogin() {
+      const session = localStorage.getItem('trade_bridge_session');
+      if (session === 'authenticated') {
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        return true;
+      }
+      return false;
+    }
+    
+    document.getElementById('btn-login').addEventListener('click', function() {
+      const user = document.getElementById('login-username').value;
+      const pass = document.getElementById('login-password').value;
+      
+      if (user === LOGIN_CREDENTIALS.username && pass === LOGIN_CREDENTIALS.password) {
+        localStorage.setItem('trade_bridge_session', 'authenticated');
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('login-error').classList.add('hidden');
+        initApp();
+      } else {
+        document.getElementById('login-error').classList.remove('hidden');
+        document.getElementById('login-password').value = '';
+      }
+    });
+    
+    document.getElementById('login-password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') document.getElementById('btn-login').click();
+    });
+    
     // Initialiser les icônes Lucide
     lucide.createIcons();
 
+    function initApp() {
     // Se connecter au WebSocket du serveur (wss:// sur HTTPS, ws:// sur HTTP)
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser`);
@@ -669,7 +734,12 @@
         btn.innerText = "ADD BRAINROT";
       }, 1000);
     };
+    } // fin initApp()
 
+    // Démarrer si déjà connecté
+    if (checkLogin()) {
+      initApp();
+    }
   </script>
 </body>
 </html>
