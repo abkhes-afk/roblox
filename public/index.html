@@ -471,8 +471,9 @@
         
         // Ajouter un petit bouton de suppression en haut à droite des items simulés !
         const safeName = escapeHtml(item.name);
+        const originalName = item.name.replace(/'/g, "\\'");
         const deleteButton = item.isFake 
-          ? `<button onclick="removeFakePet('${safeName}')" class="absolute top-1 right-1 p-0.5 rounded-full bg-orange-200 hover:bg-orange-300 text-orange-700 transition duration-150 z-10 scale-90">
+          ? `<button onclick="removeFakePet('${originalName}')" class="absolute top-1 right-1 p-0.5 rounded-full bg-orange-200 hover:bg-orange-300 text-orange-700 transition duration-150 z-10 scale-90">
                <i data-lucide="x" class="w-2.5 h-2.5"></i>
              </button>`
           : '';
