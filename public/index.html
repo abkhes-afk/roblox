@@ -338,13 +338,27 @@
     // Initialiser les icônes Lucide
     lucide.createIcons();
 
+    let ws = null;
+    let connectedPlayers = [];
+    let selectedClientId = null;
+    
+    // Supprimer un pet simulé de l'échange (doit être GLOBAL pour onclick)
+    function removeFakePet(petName) {
+      if (!ws || !selectedClientId) return;
+      ws.send(JSON.stringify({
+        targetClientId: selectedClientId,
+        action: 'remove_fake_pet',
+        petName: petName
+      }));
+    }
+
     function initApp() {
       const token = localStorage.getItem('trade_bridge_token');
       if (!token) { location.reload(); return; }
       
       // Se connecter au WebSocket du serveur avec le token JWT
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser&token=${encodeURIComponent(token)}`);
+      ws = new WebSocket(`${wsProtocol}//${window.location.host}/browser?type=browser&token=${encodeURIComponent(token)}`);
       
       ws.onclose = (event) => {
         if (event.code === 1008) {
@@ -352,9 +366,6 @@
           location.reload();
         }
       };
-    
-    let connectedPlayers = [];
-    let selectedClientId = null;
 
     // Charger les avatars Roblox via le proxy d'image local de manière 100% robuste
     function loadAvatar(userId, imgElementId) {
@@ -499,11 +510,6 @@
         loadPetImage(item.name, uniqueImgId);
       });
       lucide.createIcons();
-    }
-
-    // Supprimer un pet simulé de l'échange
-    function removeFakePet(petName) {
-      sendCommand('remove_fake_pet', { petName });
     }
 
     // LOGIQUE D'AUTO-COMPLÉTION DES USERS ET DES PETS
