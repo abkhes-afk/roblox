@@ -24,7 +24,7 @@ pcall(function()
     -- Méthode 1 : via le module AnimalsShared (tableau complet des animaux)
     if AnimalsShared and type(AnimalsShared) == "table" then
         for name, data in pairs(AnimalsShared) do
-            if type(name) == "string" and name ~= "" then
+            if type(name) == "string" and name ~= "" and type(data) == "table" then
                 table.insert(allAnimalsList, name)
                 allAnimalsData[name] = data
             end
@@ -34,7 +34,7 @@ pcall(function()
     -- Méthode 2 : via le module AnimalsData (autre structure possible)
     if #allAnimalsList == 0 and AnimalsData and type(AnimalsData) == "table" then
         for name, data in pairs(AnimalsData) do
-            if type(name) == "string" and name ~= "" then
+            if type(name) == "string" and name ~= "" and type(data) == "table" then
                 table.insert(allAnimalsList, name)
                 allAnimalsData[name] = data
             end
