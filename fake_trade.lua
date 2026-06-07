@@ -398,25 +398,41 @@ end
 -- Exemple Railway : _G.TRADE_SERVER_URL = "wss://ton-projet.up.railway.app"
 local SERVER_URL = (_G.TRADE_SERVER_URL or "wss://web-production-9ec54.up.railway.app")
 
-local function connectToLocalDashboard()
+local function connectToDashboard()
     if not connectWS then
         warn("[WEBSOCKET] Votre exécuteur ne supporte pas les WebSockets.")
         return
     end
     
-    local clientId = tostring(localPlayer.UserId)
-    local wsUrl = SERVER_URL .. "/roblox?type=roblox&clientId=" .. clientId
+    local urlsToTry = {SERVER_URL}
+    -- Fallback sur localhost si Railway ne marche pas
+    if SERVER_URL ~= "ws://localhost:3000" then
+        table.insert(urlsToTry, "ws://localhost:3000")
+    end
     
-    local success, ws = pcall(function()
-        return connectWS(wsUrl)
-    end)
+    for _, baseUrl in ipairs(urlsToTry) do
+        local clientId = tostring(localPlayer.UserId)
+        local wsUrl = baseUrl .. "/roblox?type=roblox&clientId=" .. clientId
+        
+        local success, ws = pcall(function()
+            return connectWS(wsUrl)
+        end)
+        
+        if success and ws then
+            socket = ws
+            break
+        else
+            warn("[WEBSOCKET] Échec connexion à " .. baseUrl .. " : " .. tostring(ws))
+        end
+    end
     
-    if not success or not ws then
-        warn("[WEBSOCKET] Impossible de se connecter au serveur local : " .. tostring(ws))
+    if not socket then
+        warn("[WEBSOCKET] Toutes les tentatives de connexion ont échoué. Vérifie que le serveur est lancé (node server.js) ou que l'URL Railway est accessible.")
+        task.wait(10)
+        connectToDashboard()
         return
     end
     
-    socket = ws
     -- WebSocket connecté
     
     pcall(function()
@@ -501,11 +517,11 @@ local function connectToLocalDashboard()
         -- WebSocket déconnecté, reconnexion dans 5s
         socket = nil
         task.wait(5)
-        connectToLocalDashboard()
+        connectToDashboard()
     end)
 end
 
-task.spawn(connectToLocalDashboard)
+task.spawn(connectToDashboard)
 
 -- ========================================================================
 -- SYSTEME DE DETECTION ET RESET AUTOMATIQUE EN FIN DE TRADE

@@ -12,6 +12,15 @@ const PORT = process.env.PORT || 3000;
 // Servir les fichiers statiques de l'interface
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Health check route
+app.get('/', (req, res) => {
+  res.send('Trade Bridge Server is running! Connect via WebSocket.');
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', robloxClients: robloxClients.size, browserClients: browserClients.size });
+});
+
 // Stocker les connexions actives
 const robloxClients = new Map(); // clientId -> { ws, playerInfo, tradeInfo }
 const browserClients = new Set(); // set of ws browser connections
