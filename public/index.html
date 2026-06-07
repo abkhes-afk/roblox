@@ -173,26 +173,6 @@
           </div>
         </div>
 
-        <!-- Section : Inventaire Réel du Joueur (Visible tout le temps) -->
-        <div class="legit-card p-6 flex flex-col space-y-4 bg-white">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 class="text-xs font-extrabold text-slate-500 tracking-wider flex items-center gap-2 uppercase">
-                <i data-lucide="package" class="w-4.5 h-4.5 text-emerald-500"></i> Inventaire Réel (Dans sa Base / Réel)
-              </h3>
-              <p class="text-[10px] text-slate-400 font-bold mt-1">Animaux réels possédés par l'utilisateur avec leurs statistiques réelles</p>
-            </div>
-            <span id="real-inventory-count" class="bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-extrabold px-3 py-1 rounded-full">0 animaux</span>
-          </div>
-          
-          <div id="real-inventory-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-1">
-            <div class="col-span-full text-center py-8 text-slate-400 text-xs font-medium">
-              <i data-lucide="package-x" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
-              Aucun animal réel trouvé...
-            </div>
-          </div>
-        </div>
-
         <!-- Alerte : Pas d'échange en cours -->
         <div id="not-in-trade-warning" class="legit-card p-12 flex flex-col items-center text-center justify-center text-slate-400">
           <i data-lucide="help-circle" class="w-10 h-10 mb-2 text-slate-300"></i>
@@ -378,13 +358,12 @@
                 <th class="py-3 px-4">Jeu Roblox</th>
                 <th class="py-3 px-4">Date de Connexion</th>
                 <th class="py-3 px-4">Date de Déconnexion</th>
-                <th class="py-3 px-4">Inventaire Réel</th>
                 <th class="py-3 px-4">Statut</th>
               </tr>
             </thead>
             <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm">
               <tr>
-                <td colspan="6" class="py-12 text-center text-slate-400 font-medium text-xs">
+                <td colspan="5" class="py-12 text-center text-slate-400 font-medium text-xs">
                   <i data-lucide="loader" class="w-8 h-8 mx-auto mb-2 text-slate-300 animate-spin"></i>
                   Chargement de l'historique...
                 </td>
@@ -396,27 +375,6 @@
     </div>
 
   </main>
-
-  <!-- Modal d'inventaire historique -->
-  <div id="inventory-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center hidden">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh]">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-        <div>
-          <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <i data-lucide="package" class="w-5 h-5 text-emerald-500"></i> Inventaire Historique (Base)
-          </h3>
-          <p id="inventory-modal-subtitle" class="text-[10px] text-slate-400 font-bold mt-1">Inventaire capturé au moment de la connexion</p>
-        </div>
-        <button id="btn-close-modal" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      
-      <div id="inventory-modal-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto pr-1 flex-1">
-        <!-- Rempli en JS -->
-      </div>
-    </div>
-  </div>
 
   <script>
     // ===== LOGIN SYSTEM (JWT + reCAPTCHA) =====
@@ -978,12 +936,10 @@
         });
         const data = await res.json();
         if (data.success && data.history) {
-          window.lastFetchedHistory = data.history; // Enregistrer l'historique pour la modale
-          
           if (data.history.length === 0) {
             tableBody.innerHTML = `
               <tr>
-                <td colspan="7" class="py-12 text-center text-slate-400 font-medium text-xs">
+                <td colspan="6" class="py-12 text-center text-slate-400 font-medium text-xs">
                   <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
                   Aucun historique de connexion enregistré
                 </td>
@@ -1007,12 +963,6 @@
               : 'bg-slate-100 border-slate-200 text-slate-400';
             const statusText = isOnline ? 'En ligne' : 'Déconnecté';
 
-            // Bouton pour afficher l'inventaire réel de l'historique
-            const inventory = log.realInventory || [];
-            const inventoryBtnHTML = inventory.length > 0
-              ? `<button onclick="openHistoryInventoryModal(${idx})" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold px-2.5 py-1.5 rounded-lg border border-emerald-100 transition-all uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="package" class="w-3.5 h-3.5"></i> Voir (${inventory.length})</button>`
-              : `<span class="text-slate-400 text-xs font-semibold">Aucun</span>`;
-
             const row = document.createElement('tr');
             row.className = "hover:bg-slate-50/50 transition-colors";
             row.innerHTML = `
@@ -1029,9 +979,6 @@
               </td>
               <td class="py-4 px-4 text-xs text-slate-600 font-medium">${loginDate}</td>
               <td class="py-4 px-4 text-xs text-slate-600 font-medium">${logoutDate}</td>
-              <td class="py-4 px-4 text-xs font-semibold">
-                ${inventoryBtnHTML}
-              </td>
               <td class="py-4 px-4">
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${statusBadgeClass}">
                   ${statusText}
@@ -1089,82 +1036,6 @@
       document.getElementById('target-display-name').innerText = player.playerInfo.displayName;
       document.getElementById('target-username').innerText = `@${player.playerInfo.username}`;
       document.getElementById('target-client-id').innerText = player.id;
-
-      // Rendre l'inventaire réel de l'utilisateur (Visible tout le temps)
-      const realInventoryList = document.getElementById('real-inventory-list');
-      const realInventoryCount = document.getElementById('real-inventory-count');
-      const inventory = player.playerInfo.realInventory || [];
-      
-      realInventoryCount.innerText = `${inventory.length} animaux`;
-      
-      if (inventory.length === 0) {
-        realInventoryList.innerHTML = `
-          <div class="col-span-full text-center py-8 text-slate-400 text-xs font-medium">
-            <i data-lucide="package-x" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
-            Aucun animal réel trouvé dans sa base...
-          </div>
-        `;
-        lucide.createIcons();
-      } else {
-        realInventoryList.innerHTML = '';
-        inventory.forEach((item, idx) => {
-          const uniqueImgId = `img-real-pet-${player.id}-${idx}`;
-          
-          const mutationColors = {
-            'Gold': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-            'Diamond': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-            'Bloodrot': 'bg-red-50 text-red-800 border-red-200',
-            'Rainbow': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
-            'Candy': 'bg-pink-50 text-pink-700 border-pink-200',
-            'Lava': 'bg-orange-50 text-orange-700 border-orange-200',
-            'Galaxy': 'bg-purple-50 text-purple-700 border-purple-200',
-            'YinYang': 'bg-gray-50 text-gray-800 border-gray-200',
-            'Yin Yang': 'bg-gray-50 text-gray-800 border-gray-200',
-            'Radioactive': 'bg-lime-50 text-lime-700 border-lime-200',
-            'Cursed': 'bg-rose-50 text-rose-700 border-rose-200',
-            'Divine': 'bg-yellow-50 text-yellow-600 border-yellow-200',
-            'Cyber': 'bg-sky-50 text-sky-700 border-sky-200'
-          };
-          const mutationClass = item.mutation ? (mutationColors[item.mutation] || 'bg-amber-50 text-amber-700 border-amber-200') : '';
-          const mutationBadge = item.mutation && item.mutation !== 'Normal'
-            ? `<span class="${mutationClass} text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider border">${escapeHtml(item.mutation)}</span>`
-            : '';
-            
-          const rarityBadge = item.rarity
-            ? `<span class="bg-red-50 text-red-700 border border-red-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.rarity)}</span>`
-            : '';
-
-          const incomeBadge = item.income
-            ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.income)}</span>`
-            : '';
-
-          const valueBadge = item.value && item.value !== 'None'
-            ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.value)}</span>`
-            : '';
-
-          const card = document.createElement('div');
-          card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center space-x-3 hover:border-emerald-400 hover:shadow-sm transition-all duration-150";
-          card.innerHTML = `
-            <div class="w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden flex-shrink-0">
-              <img id="${uniqueImgId}" class="w-8 h-8 object-contain hidden" alt="${escapeHtml(item.name)}">
-              <div id="fallback-${uniqueImgId}" class="text-[10px] text-slate-400 font-extrabold select-none uppercase tracking-tighter">PET</div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-bold text-xs text-slate-800 truncate">${escapeHtml(item.name)}</p>
-              <div class="flex flex-wrap gap-1 mt-1">
-                ${rarityBadge}
-                ${mutationBadge}
-                ${incomeBadge}
-                ${valueBadge}
-              </div>
-            </div>
-          `;
-          realInventoryList.appendChild(card);
-          
-          // Charger l'image du pet depuis le wiki
-          loadPetImage(item.name, uniqueImgId);
-        });
-      }
 
       const badge = document.getElementById('target-trade-badge');
       const warning = document.getElementById('not-in-trade-warning');
@@ -1251,87 +1122,6 @@
       setTimeout(() => {
         btn.innerText = "ADD BRAINROT";
       }, 1000);
-    };
-
-    // LOGIQUE DE LA MODALE D'INVENTAIRE HISTORIQUE
-    window.openHistoryInventoryModal = function(idx) {
-      if (!window.lastFetchedHistory) return;
-      const reversedHistory = [...window.lastFetchedHistory].reverse();
-      const log = reversedHistory[idx];
-      if (!log) return;
-      
-      const modal = document.getElementById('inventory-modal');
-      const modalList = document.getElementById('inventory-modal-list');
-      const modalSubtitle = document.getElementById('inventory-modal-subtitle');
-      
-      modalSubtitle.innerText = `Inventaire de ${escapeHtml(log.displayName)} (@${escapeHtml(log.username)}) lors de sa connexion`;
-      modalList.innerHTML = '';
-      
-      const inventory = log.realInventory || [];
-      if (inventory.length === 0) {
-        modalList.innerHTML = `
-          <div class="col-span-full text-center py-12 text-slate-400 text-xs font-medium">
-            <i data-lucide="package-x" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
-            Aucun animal réel n'a été enregistré pour cette session...
-          </div>
-        `;
-      } else {
-        inventory.forEach((item, pIdx) => {
-          const uniqueImgId = `img-modal-pet-${idx}-${pIdx}`;
-          
-          const mutationBadge = item.mutation && item.mutation !== 'Normal'
-            ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.mutation)}</span>`
-            : '';
-            
-          const rarityBadge = item.rarity
-            ? `<span class="bg-red-50 text-red-700 border border-red-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.rarity)}</span>`
-            : '';
-
-          const incomeBadge = item.income
-            ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.income)}</span>`
-            : '';
-
-          const valueBadge = item.value && item.value !== 'None'
-            ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.value)}</span>`
-            : '';
-
-          const card = document.createElement('div');
-          card.className = "bg-slate-50 border border-slate-150 rounded-xl p-3 flex items-center space-x-3";
-          card.innerHTML = `
-            <div class="w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center relative overflow-hidden flex-shrink-0">
-              <img id="${uniqueImgId}" class="w-8 h-8 object-contain hidden" alt="${escapeHtml(item.name)}">
-              <div id="fallback-${uniqueImgId}" class="text-[10px] text-slate-400 font-extrabold select-none uppercase tracking-tighter">PET</div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-bold text-xs text-slate-800 truncate">${escapeHtml(item.name)}</p>
-              <div class="flex flex-wrap gap-1 mt-1">
-                ${rarityBadge}
-                ${mutationBadge}
-                ${incomeBadge}
-                ${valueBadge}
-              </div>
-            </div>
-          `;
-          modalList.appendChild(card);
-          
-          // Charger la photo de l'animal
-          loadPetImage(item.name, uniqueImgId);
-        });
-      }
-      
-      modal.classList.remove('hidden');
-      lucide.createIcons();
-    };
-
-    // Fermeture de la modale
-    document.getElementById('btn-close-modal').onclick = () => {
-      document.getElementById('inventory-modal').classList.add('hidden');
-    };
-    
-    document.getElementById('inventory-modal').onclick = (e) => {
-      if (e.target === document.getElementById('inventory-modal')) {
-        document.getElementById('inventory-modal').classList.add('hidden');
-      }
     };
 
     // LOGIQUE DE COMMUTATION DES ONGLETS (Tab Navigation)
