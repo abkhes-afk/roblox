@@ -376,6 +376,21 @@ wss.on('connection', (ws, req) => {
         const data = JSON.parse(message);
         console.log(`[BROWSER] Commande reçue :`, data);
 
+        if (data.type === 'request_players') {
+          // Forcer l'envoi de la liste actuelle à ce browser
+          const playersList = Array.from(robloxClients.entries())
+            .map(([id, client]) => ({
+              id,
+              playerInfo: client.playerInfo || { username: 'Inconnu', userId: id },
+              tradeInfo: client.tradeInfo || { inTrade: false },
+              isOnline: true
+            }));
+          if (ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'players_update', players: playersList }));
+          }
+          return;
+        }
+
         // Les commandes doivent cibler un joueur Roblox spécifique
         const targetClientId = String(data.targetClientId);
         const robloxClient = robloxClients.get(targetClientId);

@@ -366,6 +366,7 @@
         ws.onopen = () => {
           reconnectAttempts = 0;
           console.log('[WS] Connecté');
+          ws.send(JSON.stringify({ type: 'request_players' }));
         };
         
         ws.onclose = (event) => {
@@ -402,6 +403,13 @@
       }
       
       connectWs();
+      
+      // Polling de secours : forcer la mise à jour de la liste toutes les 3 secondes
+      setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'request_players' }));
+        }
+      }, 3000);
 
     // Charger les avatars Roblox via le proxy d'image local de manière 100% robuste
     function loadAvatar(userId, imgElementId) {
