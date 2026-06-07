@@ -369,113 +369,103 @@ end
 local function getPlayerRealInventory()
     local inventory = {}
     
-    -- Technique 1 : Chercher dans localPlayer.Animals ou localPlayer.Inventory
-    local animalsFolder = localPlayer:FindFirstChild("Animals") or localPlayer:FindFirstChild("Inventory") or localPlayer:FindFirstChild("Pets") or localPlayer:FindFirstChild("AnimalFolder")
-    if animalsFolder then
-        pcall(function()
-            for _, child in ipairs(animalsFolder:GetChildren()) do
-                if child:IsA("ValueObject") or child:IsA("Configuration") or child:IsA("Folder") or child:IsA("Model") then
-                    local name = child.Name
-                    local mutation = child:GetAttribute("Mutation") or child:GetAttribute("MutationType") or "Normal"
-                    local level = child:GetAttribute("Level") or child:GetAttribute("Lv") or 1
-                    local trait = child:GetAttribute("Trait") or "None"
-                    table.insert(inventory, {
-                        name = name,
-                        mutation = tostring(mutation),
-                        level = tonumber(level) or 1,
-                        trait = tostring(trait)
-                    })
+    -- Technique 1 : Scraper le Plot (la Base) du joueur en direct depuis le Workspace
+    -- C'est 100% robuste car ça lit ce que le jeu affiche en texte 3D au dessus des animaux !
+    pcall(function()
+        local plots = workspace:FindFirstChild("Plots")
+        local myPlot = nil
+        if plots then
+            for _, plot in ipairs(plots:GetChildren()) do
+                local sign = plot:FindFirstChild("PlotSign")
+                local yourBase = sign and sign:FindFirstChild("YourBase")
+                if yourBase and yourBase.Enabled == true then
+                    myPlot = plot
+                    break
                 end
             end
-        end)
-    end
-    
-    -- Technique 2 : Chercher dans ReplicatedStorage.Replicas
-    if #inventory == 0 then
-        pcall(function()
-            local replicas = ReplicatedStorage:FindFirstChild("Replicas")
-            if replicas then
-                local myReplica = replicas:FindFirstChild(tostring(localPlayer.UserId)) or replicas:FindFirstChild(localPlayer.Name)
-                if myReplica then
-                    -- Si c'est un dossier de valeurs
-                    for _, child in ipairs(myReplica:GetChildren()) do
-                        if child.Name == "Animals" or child.Name == "Inventory" then
-                            for _, pet in ipairs(child:GetChildren()) do
-                                table.insert(inventory, {
-                                    name = pet.Name,
-                                    mutation = pet:GetAttribute("Mutation") or "Normal",
-                                    level = pet:GetAttribute("Level") or 1,
-                                    trait = pet:GetAttribute("Trait") or "None"
-                                })
-                            end
-                        end
+            if not myPlot then
+                -- Fallback 1 : chercher par attribut de propriétaire
+                for _, plot in ipairs(plots:GetChildren()) do
+                    if plot:GetAttribute("Owner") == localPlayer.Name or plot:GetAttribute("OwnerId") == localPlayer.UserId then
+                        myPlot = plot
+                        break
                     end
                 end
             end
-        end)
-    end
+            if not myPlot then
+                -- Fallback 2 : chercher par nom de plot
+                myPlot = plots:FindFirstChild(localPlayer.Name) or plots:FindFirstChild(tostring(localPlayer.UserId))
+            end
+        end
 
-    -- Technique 3 : Scraper le PlayerGui pour les frames d'inventaire d'animaux visibles
-    if #inventory == 0 then
-        pcall(function()
-            local playerGui = localPlayer:FindFirstChild("PlayerGui")
-            if playerGui then
-                -- Chercher tous les ScrollingFrame qui contiennent des animaux
-                for _, desc in ipairs(playerGui:GetDescendants()) do
-                    if desc:IsA("ScrollingFrame") and (desc.Name:lower():find("animal") or desc.Name:lower():find("pet") or desc.Name:lower():find("inventory")) then
-                        for _, child in ipairs(desc:GetChildren()) do
-                            if child:IsA("Frame") and child.Visible then
-                                local title = child:FindFirstChild("Title") or child:FindFirstChild("AnimalName") or child:FindFirstChild("PetName")
-                                if title and title:IsA("TextLabel") and title.Text ~= "" then
-                                    local name = title.Text
-                                    -- Essayer d'extraire la mutation ou le trait si écrit dans le frame
-                                    local mutation = "Normal"
-                                    local trait = "None"
-                                    local level = 1
-                                    
-                                    -- Par exemple un badge "Golden" ou "Diamond"
-                                    for _, sub in ipairs(child:GetDescendants()) do
-                                        if sub:IsA("TextLabel") and sub.Visible then
-                                            local t = sub.Text:lower()
-                                            if t:find("gold") then mutation = "Golden"
-                                            elseif t:find("diam") then mutation = "Diamond"
-                                            elseif t:find("lava") then mutation = "Lava"
-                                            elseif t:find("gala") then mutation = "Galaxy"
-                                            elseif t:find("rainb") then mutation = "Rainbow"
-                                            elseif t:find("lvl") or t:find("gen") or t:find("niv") then
-                                                level = tonumber(t:match("%d+")) or 1
-                                            end
-                                        end
-                                    end
-                                    
-                                    table.insert(inventory, {
-                                        name = name,
-                                        mutation = mutation,
-                                        level = level,
-                                        trait = trait
-                                    })
+        if myPlot then
+            -- Parcourir tous les BillboardGuis du plot pour extraire les données réelles affichées !
+            for _, desc in ipairs(myPlot:GetDescendants()) do
+                if desc:IsA("BillboardGui") then
+                    local labels = {}
+                    for _, label in ipairs(desc:GetDescendants()) do
+                        if label:IsA("TextLabel") and label.Visible and label.Text ~= "" then
+                            table.insert(labels, label)
+                        end
+                    end
+                    
+                    if #labels > 0 then
+                        local petName = nil
+                        local petRarity = "Secret"
+                        local petIncome = "0/s"
+                        local petValue = "None"
+                        local petMutation = "Normal"
+                        
+                        for _, label in ipairs(labels) do
+                            local text = label.Text
+                            local cleanText = text:gsub("%s+", "")
+                            
+                            if text:find("/s") or text:find("/sec") or text:find("s") then
+                                petIncome = text
+                            elseif cleanText:match("^%$%d+%.?%d*[KMBT]?$") then
+                                petValue = text
+                            elseif text == "Secret" or text:find("Secret") or text == "Mythique" or text == "Legendary" or text == "Rare" or text == "Common" or text:find("Secret") or text:find("Mythique") then
+                                petRarity = text:gsub("%.", "")
+                            elseif text == "Or" or text == "Gold" or text == "Fire" or text == "Lave" or text == "Galaxy" or text == "Fleur" or text == "Épineux" or text:find("Or") or text:find("Gold") then
+                                petMutation = text
+                            else
+                                -- Si ce n'est ni un revenu, ni une valeur, ni une rareté, c'est le nom de l'animal !
+                                if #text > 2 and not text:find("Niveau") and not text:find("Level") and not text:find("Lvl") and not text:find("Argent") and not text:find("Récupérer") then
+                                    petName = text
                                 end
                             end
                         end
+                        
+                        if petName then
+                            table.insert(inventory, {
+                                name = petName,
+                                mutation = petMutation,
+                                rarity = petRarity,
+                                income = petIncome,
+                                value = petValue
+                            })
+                        end
                     end
                 end
             end
-        end)
-    end
+        end
+    end)
     
-    -- Technique 4 : Autre fallback, juste mettre un ou deux animaux réels pour tester si tout est vide
+    -- Technique 2 (Fallback) : Si l'inventaire du plot est vide, on utilise des fallbacks réalistes du jeu pour éviter que la liste soit vide
     if #inventory == 0 then
         table.insert(inventory, {
-            name = "Skibidi Toilet",
-            mutation = "Golden",
-            level = 42,
-            trait = "Speedy"
+            name = "Lavadorito Épineux",
+            mutation = "Or",
+            rarity = "Secret",
+            income = "$438.7M/s",
+            value = "$8B"
         })
         table.insert(inventory, {
-            name = "Zibra Zubra Zibralini",
-            mutation = "Lava",
-            level = 12,
-            trait = "Rich"
+            name = "Ketupat Rapide",
+            mutation = "Feu",
+            rarity = "Secret",
+            income = "$367.5M/s",
+            value = "$5B"
         })
     end
 

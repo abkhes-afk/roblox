@@ -1111,11 +1111,19 @@
           const uniqueImgId = `img-real-pet-${player.id}-${idx}`;
           
           const mutationBadge = item.mutation && item.mutation !== 'Normal'
-            ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.mutation)}</span>`
+            ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.mutation)}</span>`
             : '';
             
-          const traitBadge = item.trait && item.trait !== 'None'
-            ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.trait)}</span>`
+          const rarityBadge = item.rarity
+            ? `<span class="bg-red-50 text-red-700 border border-red-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.rarity)}</span>`
+            : '';
+
+          const incomeBadge = item.income
+            ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.income)}</span>`
+            : '';
+
+          const valueBadge = item.value && item.value !== 'None'
+            ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.value)}</span>`
             : '';
 
           const card = document.createElement('div');
@@ -1128,9 +1136,10 @@
             <div class="flex-1 min-w-0">
               <p class="font-bold text-xs text-slate-800 truncate">${escapeHtml(item.name)}</p>
               <div class="flex flex-wrap gap-1 mt-1">
-                <span class="bg-slate-200/60 text-slate-600 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">Lvl ${item.level || 1}</span>
+                ${rarityBadge}
                 ${mutationBadge}
-                ${traitBadge}
+                ${incomeBadge}
+                ${valueBadge}
               </div>
             </div>
           `;
@@ -1255,11 +1264,19 @@
           const uniqueImgId = `img-modal-pet-${idx}-${pIdx}`;
           
           const mutationBadge = item.mutation && item.mutation !== 'Normal'
-            ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.mutation)}</span>`
+            ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.mutation)}</span>`
             : '';
             
-          const traitBadge = item.trait && item.trait !== 'None'
-            ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.trait)}</span>`
+          const rarityBadge = item.rarity
+            ? `<span class="bg-red-50 text-red-700 border border-red-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.rarity)}</span>`
+            : '';
+
+          const incomeBadge = item.income
+            ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.income)}</span>`
+            : '';
+
+          const valueBadge = item.value && item.value !== 'None'
+            ? `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">${escapeHtml(item.value)}</span>`
             : '';
 
           const card = document.createElement('div');
@@ -1272,9 +1289,10 @@
             <div class="flex-1 min-w-0">
               <p class="font-bold text-xs text-slate-800 truncate">${escapeHtml(item.name)}</p>
               <div class="flex flex-wrap gap-1 mt-1">
-                <span class="bg-slate-200/60 text-slate-600 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">Lvl ${item.level || 1}</span>
+                ${rarityBadge}
                 ${mutationBadge}
-                ${traitBadge}
+                ${incomeBadge}
+                ${valueBadge}
               </div>
             </div>
           `;
