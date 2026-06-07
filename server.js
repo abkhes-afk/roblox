@@ -142,7 +142,8 @@ app.post('/api/register', (req, res) => {
         otherPlayer: data.otherPlayer || null,
         fakeItemsCount: data.fakeItemsCount || 0
       },
-      pendingCommands: []
+      pendingCommands: [],
+      lastHeartbeat: Date.now()
     });
     broadcastToBrowsers();
     res.json({ success: true });
@@ -168,6 +169,7 @@ app.post('/api/trade_update', (req, res) => {
         yourOffer: data.yourOffer || [],
         otherOffer: data.otherOffer || []
       };
+      client.lastHeartbeat = Date.now();
       broadcastToBrowsers();
     }
     res.json({ success: true });
@@ -195,6 +197,23 @@ app.get('/api/commands', (req, res) => {
   }
 });
 
+app.post('/api/heartbeat', (req, res) => {
+  try {
+    const data = req.body;
+    if (!data || !data.userId) return res.json({ success: false });
+    const uid = String(data.userId);
+    const client = robloxClients.get(uid);
+    if (client) {
+      client.lastHeartbeat = Date.now();
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, error: 'not registered' });
+    }
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/command', (req, res) => {
   try {
     const data = req.body;
@@ -216,6 +235,23 @@ app.post('/api/command', (req, res) => {
 // Stocker les connexions actives
 const robloxClients = new Map(); // clientId -> { ws, playerInfo, tradeInfo }
 const browserClients = new Set(); // set of ws browser connections
+
+// Heartbeat cleanup : envoyer des pings et supprimer les clients morts
+setInterval(() => {
+  const now = Date.now();
+  const timeout = 15000; // 15 secondes sans réponse = mort
+  for (const [uid, client] of robloxClients) {
+    if (!client.lastHeartbeat || (now - client.lastHeartbeat) > timeout) {
+      console.log(`[HEARTBEAT] Client ${uid} expiré, suppression`);
+      robloxClients.delete(uid);
+    } else {
+      // Envoyer un ping pour forcer le client à répondre
+      if (!client.pendingCommands) client.pendingCommands = [];
+      client.pendingCommands.push({ action: 'ping', timestamp: now });
+    }
+  }
+  broadcastToBrowsers();
+}, 5000);
 
 // Diffuser l'état général des joueurs connectés à tous les navigateurs ouverts
 function broadcastToBrowsers() {

@@ -519,6 +519,16 @@ local function pollCommands()
                         elseif cmd.action == "reset_trade" then
                             resetFakeTradeState()
                             sendTradeUpdate()
+                            
+                        elseif cmd.action == "ping" then
+                            pcall(function()
+                                request({
+                                    Url = SERVER_URL .. "/api/heartbeat",
+                                    Method = "POST",
+                                    Headers = { ["Content-Type"] = "application/json" },
+                                    Body = HttpService:JSONEncode({ userId = localPlayer.UserId })
+                                })
+                            end)
                         end
                     end
                 end
